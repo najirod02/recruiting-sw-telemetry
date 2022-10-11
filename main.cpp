@@ -8,7 +8,7 @@ extern "C"{
 
 int main(void){
 
-    cout << "Welcome to Project 2" << endl;
+    cout << "Welcome to Project 2 of Telemetry" << endl;
 
     return 0;
 }
