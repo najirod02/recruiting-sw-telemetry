@@ -1,11 +1,11 @@
-#include <stdio.h>
+#include <cstdio>
 #include <iostream>
 #include <map>
 #include <chrono>
 #include <string>
 #include <bits/stdc++.h>
 #include <ctime>
-#include <stdint.h>
+#include <cstdint>
 
 using namespace std;
 
@@ -83,8 +83,12 @@ int64_t hexadecimalToDecimal(string hexVal);
 /**
  * file log which saves every data with millis in located in
  * C:\telemetryLog
- * NOTE : the folder must be created in disc C
  *
+ * file csv which saves the data from start sessions located in
+ * C:\telemetryCSV
+ *
+ *
+ * NOTE : the folders must be created in disc C
  */
 int main() {
     using std::chrono::high_resolution_clock;
@@ -94,9 +98,8 @@ int main() {
 
     //file for log
     string file_name = createNameFile();
-    cout << file_name;
     ofstream log;
-    log.open("C:\\telemetryLog\\"+file_name);
+    log.open("C:\\telemetryLog\\"+file_name+".log");
 
     //error opening log file
     if (log.fail()) {
@@ -115,11 +118,12 @@ int main() {
     };
 
     //map containing stats about the id message
-    map <string, values> messages;
+    map <string, values *> messages;
+
 
     //opening CAN interface
-    //TODO change path to read file
-    int status = open_can("C:/Users/dorij/OneDrive/Desktop/eagletrt/recruiting-sw-telemetry/candump.log");
+    //TODO change path to read file and save file into some folder in the project
+    int status = open_can(R"(C:\Users\dorij\OneDrive\Desktop\eagletrt\recruiting-sw-telemetry\candump.log)");
     int count = 0;
     //error in opening file
     if(status == -1){
@@ -129,14 +133,13 @@ int main() {
 
     //variable to count the time between every message
     auto t1 = high_resolution_clock::now();
-    string logMsg = "";
+    string logMsg;
 
     //reading messages
     int nByte;//numbers of byte read
     char message[MAX_CAN_MESSAGE_SIZE];//the message read
 
     do{
-
         nByte = can_receive(message);
         auto t2 = high_resolution_clock::now();//time after the message
 
@@ -163,22 +166,37 @@ int main() {
         } else if(check_stop_message(message)){
             //change from START to IDLE
             state = IDLE;
-            //TODO export csv file of the map
+
+            //TODO export csv file of the map using a method
+            //export_csv(messages);
+            fstream csv;
+            csv.open("C:\\telemetryCSV\\"+file_name+".csv");
+
+            if(csv.fail()){
+                cout << "Error creating cvs file" << endl;
+                return 1;
+            }
+
+            for (const auto &message: messages)
+                csv << message.first << "," << message.second << "," << message.second->mean_time << "\n";
+
+            csv.close();
+            messages.clear();//remove all data collected
         }
 
         //if in start, saving values in map
-        if(state == START){
+        if(state == START) {
             //search for an existing id
             string id, payload;
             id = getId(message);
             payload = getPayload(message);
 
-            //save the iterato of the search
-            map<string, values>::iterator iterator = messages.find(id);
+            //save the iterator of the search
+            auto iterator = messages.find(id);
 
             //if there, increment counter and update mean
             //else, create new entry for key = ID
-            if(iterator == messages.end()){
+            if (iterator == messages.end()) {
                 //create new struct for the current id
                 values *v = new values;
                 v->nMsg = 1;
@@ -187,29 +205,26 @@ int main() {
                 v->mean_time = ms_double.count();
 
                 v->last_time = ms_double.count();
-
-                //messages.insert();
+                messages.insert(pair<string, values *>(id,v));
 
             } else {
-                iterator->second.nMsg++;//update numbers of message with that id
+                iterator->second->nMsg++;//update numbers of message with that id
 
                 //update last_time with the last one read
                 duration<double, std::milli> ms_double = (t2 - t1);
                 double last_time = ms_double.count();
-                iterator->second.last_time = last_time;
+                iterator->second->last_time = last_time;
 
                 //update mean
-                double mean = iterator->second.mean_time;
-                mean = (mean+last_time)/iterator->second.nMsg;
-                iterator->second.mean_time = mean;
-                
+                double mean = iterator->second->mean_time;
+                mean = (mean + last_time) / iterator->second->nMsg;
+                iterator->second->mean_time = mean;
             }
 
-
-
+            //end if START status
         }
 
-
+        //TODO remove print debug msg
         cout << "nByte: " << nByte << endl;
         cout << "message: " << message << endl;
 
@@ -220,6 +235,7 @@ int main() {
 
     //closing CAN interface
     close_can();
+
     return 0;
 }
 
@@ -231,12 +247,11 @@ string createNameFile(){
     timeinfo = localtime(&rawtime);
 
     strftime(buffer,80,"%d-%m-%Y %H-%M-%S",timeinfo);
-    strcat(buffer, ".log");
-    return std::string(buffer);
+    return string(buffer);
 }
 
 bool check_start_message(string line){
-    if(line.compare(START_1) == 0 || line.compare(START_2) == 0){
+    if(line == START_1 || line.compare(START_2) == 0){
         //read a start message
         return true;
     } else
@@ -299,17 +314,17 @@ int64_t hexadecimalToDecimal(string hexVal){
 }
 
 string getId(string line){
-    string sub="";
+    string sub;
 
-    for(int i=0; line[i]!='#'; i++){
+    for (int i = 0; line[i] != '#'; i++)
         sub.push_back(line[i]);
-    }
+
 
     return sub;
 }
 
 string getPayload(string line){
-    string sub="";
+    string sub;
     int index = 0;
 
     for(int index=0; line[index]!='#'; index++){
