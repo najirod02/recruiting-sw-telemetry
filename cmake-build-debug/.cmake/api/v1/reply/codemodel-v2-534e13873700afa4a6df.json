@@ -1,0 +1,87 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"jsonFile" : "directory-.-Debug-d0094a50bb2071803777.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.21"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "Project2",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "Project2::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-Project2-Debug-ded181fe1b0b5b95196b.json",
+					"name" : "Project2",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "project_2::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-project_2-Debug-69433502f0808072c0e3.json",
+					"name" : "project_2",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "project_2.2::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-project_2.2-Debug-f47228de04457320331c.json",
+					"name" : "project_2.2",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "project_library::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-project_library-Debug-f2f413bc731b2e9b58a5.json",
+					"name" : "project_library",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "C:/Users/dorij/OneDrive/Desktop/eagletrt/recruiting-sw-telemetry/cmake-build-debug",
+		"source" : "C:/Users/dorij/OneDrive/Desktop/eagletrt/recruiting-sw-telemetry"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 4
+	}
+}
