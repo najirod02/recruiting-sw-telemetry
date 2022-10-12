@@ -25,6 +25,9 @@ const int MAX_SIZE_PAYLOAD = 16;
 //these are the possible states
 enum STATUS{IDLE, START};
 
+//counter for csv files
+int counter_csv_files = 1;
+
 /**
  * create a unique string to use it as name for a file using date and time system
  * @return the string created
@@ -160,8 +163,10 @@ int main() {
         //check if the message is a start or a stop message
         if(check_start_message(message)){
             //change from IDLE to START if not already in START
-            if(state == IDLE)
+            if(state == IDLE) {
                 state = START;
+                cout << "startig START" << endl;
+            }
 
         } else if(check_stop_message(message)){
             //change from START to IDLE
@@ -170,15 +175,20 @@ int main() {
             //TODO export csv file of the map using a method
             //export_csv(messages);
             fstream csv;
-            csv.open("C:\\telemetryCSV\\"+file_name+".csv");
+            string path = "C:\\telemetryCSV\\";
+            path.append(file_name);
+            path.append("_");
+            path.append(to_string(counter_csv_files));
+            counter_csv_files++;//update che number of csv files created
+            csv.open(path+".csv", ios::out);
 
             if(csv.fail()){
-                cout << "Error creating cvs file" << endl;
+                cout << "Error creating csv file" << endl;
                 return 1;
             }
 
             for (const auto &message: messages)
-                csv << message.first << "," << message.second << "," << message.second->mean_time << "\n";
+                csv << message.first << "," << message.second->nMsg << "," << message.second->mean_time << "\n";
 
             csv.close();
             messages.clear();//remove all data collected
@@ -188,8 +198,9 @@ int main() {
         if(state == START) {
             //search for an existing id
             string id, payload;
+
             id = getId(message);
-            payload = getPayload(message);
+            //payload = getPayload(message);
 
             //save the iterator of the search
             auto iterator = messages.find(id);
@@ -203,10 +214,9 @@ int main() {
 
                 duration<double, std::milli> ms_double = (t2 - t1);
                 v->mean_time = ms_double.count();
-
                 v->last_time = ms_double.count();
-                messages.insert(pair<string, values *>(id,v));
 
+                messages.insert(pair<string, values *>(id,v));
             } else {
                 iterator->second->nMsg++;//update numbers of message with that id
 
@@ -221,13 +231,14 @@ int main() {
                 iterator->second->mean_time = mean;
             }
 
+            //TODO remove this print below
+            cout << "Finish of START status" << endl;
             //end if START status
         }
 
         //TODO remove print debug msg
         cout << "nByte: " << nByte << endl;
         cout << "message: " << message << endl;
-
     }while(nByte != -1);//error in reading or eof
 
     //close log file
@@ -251,7 +262,7 @@ string createNameFile(){
 }
 
 bool check_start_message(string line){
-    if(line == START_1 || line.compare(START_2) == 0){
+    if(line.compare(START_1) == 0 || line.compare(START_2) == 0){
         //read a start message
         return true;
     } else
