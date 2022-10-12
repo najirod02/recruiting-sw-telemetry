@@ -4,6 +4,7 @@
 #include <chrono>
 #include <string>
 #include <bits/stdc++.h>
+#include <ctime>
 
 using namespace std;
 
@@ -19,10 +20,16 @@ const string STOP_1 = "0A0#66FF";
 //these are the possible states
 enum STATUS{IDLE, START};
 
+string createNameFile();
+
 bool check_start_message(string line);
 
 bool check_stop_message(string line);
 
+/**
+ * file log which saves every data with millis in located in /bin
+ *
+ */
 int main() {
     using std::chrono::high_resolution_clock;
     using std::chrono::duration_cast;
@@ -30,12 +37,14 @@ int main() {
     using std::chrono::milliseconds;
 
     //file for log
-   ofstream log;
-   log.open("out.log");
+    string file_name = createNameFile();
+    cout << file_name;
+    ofstream log;
+    log.open(file_name);
 
     //error opening log file
     if (log.fail()) {
-        cout << "Error opening out.log file";
+        cout << "Error creating output file";
         return 1;
     }
 
@@ -75,14 +84,19 @@ int main() {
 
         //calculate the time elapsed from the begining
         /* Getting number of milliseconds as a double. */
-        duration<double, std::milli> ms_double = (t2 - t1);//to get value, ms_double.count()
 
-        //write on log file the millis and the message received
-        logMsg.append(to_string(ms_double.count()));
-        logMsg.append(" ");
-        logMsg.append(message);
-        log << logMsg;
-
+        //TODO bug, printing strange char, problem of receiver??
+        //if no byte read then don't print anything on file
+        if(nByte != -1) {
+            duration<double, std::milli> ms_double = (t2 - t1);//to get value, ms_double.count()
+            //write on log file the millis and the message received
+            logMsg.append(to_string(ms_double.count()));
+            logMsg.append(" ");
+            logMsg.append(message);
+            logMsg.append("\n");
+            log << logMsg;
+            logMsg.clear();
+        }
 
         //check if the message is a start or a stop message
         if(check_start_message(message)){
@@ -94,6 +108,7 @@ int main() {
             state = IDLE;
         }
 
+        //if in start, saving values in map
 
 
 
@@ -108,6 +123,23 @@ int main() {
     //closing CAN interface
     close_can();
     return 0;
+}
+
+/**
+ * create a unique string to use it as name for a file using date and time system
+ * @return the string created
+ */
+string createNameFile(){
+    time_t rawtime;
+    struct tm * timeinfo;
+    char buffer[80];
+
+    time (&rawtime);
+    timeinfo = localtime(&rawtime);
+
+    strftime(buffer,80,"%d-%m-%Y %H-%M-%S",timeinfo);
+    strcat(buffer, ".log");
+    return std::string(buffer);
 }
 
 /**
