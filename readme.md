@@ -147,8 +147,12 @@ This will build the executable that will be located in `./bin` directory.
 
 ## Bugs
 
-Bug when retrieving the message from the method "can_receive" in fake_receiver.c.
+1) Bug when retrieving the message from the method "can_receive" in fake_receiver.c.
 The function returns the correct message but when it is wrote in the log file,
 the file contains the message with a non-printable character, SOH (start of heading).
 This bug is costant at the 4th iteration of reading if kept the same candumbp.log file
 contained in bin folder.
+
+## Fixed bugs
+
+1) Bug fixed writing instead of ofstream, fstream and specifing in open method the mode which is ios::out.
