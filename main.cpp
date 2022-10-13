@@ -23,7 +23,8 @@ const int MAX_SIZE_ID = 3;
 const int MAX_SIZE_PAYLOAD = 16;
 
 //these are the possible states
-enum STATUS{IDLE, START};
+//TODO use START_PARSE state to parse the messages
+enum STATUS{IDLE, START, START_PARSE};
 
 //counter for csv files
 int counter_csv_files = 1;
@@ -53,14 +54,14 @@ bool check_stop_message(string line);
  * @param line the message read
  * @return the deca value of the message in 12bit, -1 if some errors occur (eg. not even payload chars)
  */
-int16_t parseId(string line);
+int16_t parseId(string &line);
 
 /**
  * parse the payload message from exa base to deca base
  * @param line the message read
  * @return the deca value of the message in 64bit, -1 if some errors occur (eg. not even payload chars)
  */
-int64_t parsePayload(string line);
+int64_t parsePayload(string &line);
 
 /**
  * get the substring id from the message
@@ -83,14 +84,15 @@ string getPayload(string line);
  */
 int64_t hexadecimalToDecimal(string hexVal);
 
-struct values;
 /**
  * create a csv file and save it in bin folder with name file_name
  * @param messages the map containing the values
  * @param file_name the name to give to the file
  * @return return 1 if some errors occurs
  */
-int createCSV(map<string, values *> messages, string file_name);
+int createCSV(auto messages, const string& file_name);
+
+
 /**
  * file log which saves every data with millis in located in
  * \bin\logs\
@@ -121,7 +123,7 @@ int main() {
     //the program start at IDLE state
     STATUS state = IDLE;
 
-    //struct to contain values about message
+    //struct to contain values about a message
     typedef struct{
         int nMsg;
         double mean_time;
@@ -133,7 +135,6 @@ int main() {
 
     //opening CAN interface
     int status = open_can("candump.log");
-    int count = 0;
     //error in opening file
     if(status == -1){
         cout << "Error opening CAN interface";
@@ -149,104 +150,87 @@ int main() {
     char message[MAX_CAN_MESSAGE_SIZE];//the message read
 
     do{
+        //there's a bug in can_receive, in some cases the function
+        //when saving the chars in the buffer it doesn't put the end line char.
+        //in the end, it saves in log file a line with also garbage character
         nByte = can_receive(message);
         auto t2 = high_resolution_clock::now();//time after the message
 
-        //TODO bug, printing strange char, problem of receiver at 4 iteraction??
         //calculate the time elapsed from the beginning
-        //if no byte read then don't print anything on file
+        //if no byte read then don't print anything on any file
         if(nByte != -1) {
-            duration<double, std::milli> ms_double = (t2 - t1);//to get value, ms_double.count()
             //write on log file the millis and the message received
+            duration<double, std::milli> ms_double = (t2 - t1);//to get value, ms_double.count()
             logMsg.append(to_string(ms_double.count()));
             logMsg.append(" ");
             logMsg.append(message);
             logMsg.append("\n");
             log << logMsg;
             logMsg.clear();
-        }
+            //------------------------------------------------
 
-        //check if the message is a start or a stop message
-        if(check_start_message(message)){
-            //change from IDLE to START if not already in START
-            if(state == IDLE) {
-                state = START;
-                cout << "starting START" << endl;
+            //check if the message is a start or a stop message
+            if (check_start_message(message)) {
+                //change from IDLE to START if not already in START
+                if (state == IDLE)
+                    state = START;
+
+            } else if (check_stop_message(message)) {
+                //change from START to IDLE
+                state = IDLE;
+
+                createCSV(messages, file_name);
+                //end START status
             }
 
-        } else if(check_stop_message(message)){
-            //change from START to IDLE
-            state = IDLE;
+            //if in start, saving values in map
+            if (state == START) {
+                //search for an existing id
+                string id, payload;
 
-            //TODO export csv file of the map using a method
-            //createCSV(messages, file_name);
-            fstream csv;
-            string path = "csv\\";
-            path.append(file_name);
-            path.append("_");
-            path.append(to_string(counter_csv_files));
-            counter_csv_files++;//update che number of csv files created
-            csv.open(path+".csv", ios::out);
+                id = getId(message);
+                payload = getPayload(message);
 
-            if(csv.fail()){
-                cout << "Error creating csv file" << endl;
-                return 1;
+                //save the iterator of the search
+                auto iterator = messages.find(id);
+
+                //if there, increment counter and update mean
+                //else, create new entry for key = ID
+                if (iterator == messages.end()) {
+                    //create new struct for the current id
+                    auto *v = new values;
+                    v->nMsg = 1;
+
+                    duration<double, std::milli> ms_double = (t2 - t1);
+                    v->mean_time = ms_double.count();
+                    v->last_time = ms_double.count();
+
+                    messages.insert(pair<string, values *>(id, v));
+                } else {
+                    iterator->second->nMsg++;//update numbers of message with that id
+
+                    //update last_time with the last one read
+                    duration<double, std::milli> ms_double = (t2 - t1);
+                    double last_time = ms_double.count();
+                    iterator->second->last_time = last_time;
+
+                    //update mean
+                    double mean = iterator->second->mean_time;
+                    mean = (mean + last_time) / iterator->second->nMsg;
+                    iterator->second->mean_time = mean;
+                }
+
             }
 
-            for (const auto &message: messages)
-                csv << message.first << "," << message.second->nMsg << "," << message.second->mean_time << "\n";
-
-            csv.close();
-            messages.clear();//remove all data collected
-
-             //TODO remove this print below
-            cout << "Finish of START status" << endl;
-            //end START status
+            //finish if(nByte != -1)
         }
 
-        //if in start, saving values in map
-        if(state == START) {
-            //search for an existing id
-            string id, payload;
-
-            id = getId(message);
-            //payload = getPayload(message);
-
-            //save the iterator of the search
-            auto iterator = messages.find(id);
-
-            //if there, increment counter and update mean
-            //else, create new entry for key = ID
-            if (iterator == messages.end()) {
-                //create new struct for the current id
-                values *v = new values;
-                v->nMsg = 1;
-
-                duration<double, std::milli> ms_double = (t2 - t1);
-                v->mean_time = ms_double.count();
-                v->last_time = ms_double.count();
-
-                messages.insert(pair<string, values *>(id,v));
-            } else {
-                iterator->second->nMsg++;//update numbers of message with that id
-
-                //update last_time with the last one read
-                duration<double, std::milli> ms_double = (t2 - t1);
-                double last_time = ms_double.count();
-                iterator->second->last_time = last_time;
-
-                //update mean
-                double mean = iterator->second->mean_time;
-                mean = (mean + last_time) / iterator->second->nMsg;
-                iterator->second->mean_time = mean;
-            }
-
-        }
-
-        //TODO remove print debug msg
-        cout << "nByte: " << nByte << endl;
-        cout << "message: " << message << endl;
     }while(nByte != -1);//error in reading or eof
+
+    if(state == START){
+        //if we are still in START mode, export the data recorder in any case
+        createCSV(messages, file_name);
+    }
 
     //close log file
     log.close();
@@ -269,22 +253,14 @@ string createNameFile(){
 }
 
 bool check_start_message(string line){
-    if(line.compare(START_1) == 0 || line.compare(START_2) == 0){
-        //read a start message
-        return true;
-    } else
-        return false;
+    return (line == START_1 || line == START_2);
 }
 
 bool check_stop_message(string line){
-    if(line.compare(STOP_1) == 0){
-        //read a stop message
-        return true;
-    } else
-        return false;
+    return (line == STOP_1);
 }
 
-int16_t parseId(string line){
+int16_t parseId(string &line){
     //split the message in two parts, id and payload
     string id = getId(line);
 
@@ -297,7 +273,7 @@ int16_t parseId(string line){
     }
 }
 
-int64_t parsePayload(string line){
+int64_t parsePayload(string &line){
     string payload = getPayload(line);
 
     if(payload.size()<=MAX_SIZE_PAYLOAD && payload.size()%2==0){
@@ -308,7 +284,6 @@ int64_t parsePayload(string line){
         return -1;
     }
 }
-
 
 int64_t hexadecimalToDecimal(string hexVal){
     int len = hexVal.size();
@@ -356,7 +331,7 @@ string getPayload(string line){
     return sub;
 }
 
-int createCSV(map<string, values *> messages, string file_name){
+int createCSV(auto messages, const string& file_name){
     fstream csv;
     string path = "csv\\";
     path.append(file_name);
