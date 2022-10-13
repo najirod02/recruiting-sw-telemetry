@@ -144,3 +144,10 @@ make -j$(nproc)
 ```
 
 This will build the executable that will be located in `./bin` directory.
+
+## Bugs
+
+Bug in fake_receiver.c (method: int can_receive(char message[MAX_CAN_MESSAGE_SIZE]);
+) where, in some cases, the function doesn't put the end line char
+after saving the chars of the current line read from the can file.
+It leads, when printing and saving the line in the log file, to see a string with also garbage characters.

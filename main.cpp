@@ -92,7 +92,7 @@ int64_t hexadecimalToDecimal(string hexVal);
  */
 int createCSV(auto messages, const string& file_name);
 
-
+//TODO notify bug in fake_receiver.c
 /**
  * file log which saves every data with millis in located in
  * \bin\logs\
