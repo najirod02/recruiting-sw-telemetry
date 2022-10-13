@@ -83,15 +83,23 @@ string getPayload(string line);
  */
 int64_t hexadecimalToDecimal(string hexVal);
 
+struct values;
+/**
+ * create a csv file and save it in bin folder with name file_name
+ * @param messages the map containing the values
+ * @param file_name the name to give to the file
+ * @return return 1 if some errors occurs
+ */
+int createCSV(map<string, values *> messages, string file_name);
 /**
  * file log which saves every data with millis in located in
- * C:\telemetryLog
+ * \bin\logs\
  *
  * file csv which saves the data from start sessions located in
- * C:\telemetryCSV
+ * \bin\csv\
  *
- *
- * NOTE : the folders must be created in disc C
+ * the file used for starting the start interface is candump.log, located in
+ * \bin\
  */
 int main() {
     using std::chrono::high_resolution_clock;
@@ -102,7 +110,7 @@ int main() {
     //file for log
     string file_name = createNameFile();
     ofstream log;
-    log.open("C:\\telemetryLog\\"+file_name+".log");
+    log.open("logs\\"+file_name+".log");
 
     //error opening log file
     if (log.fail()) {
@@ -114,19 +122,17 @@ int main() {
     STATUS state = IDLE;
 
     //struct to contain values about message
-    struct values{
+    typedef struct{
         int nMsg;
         double mean_time;
         double last_time;//indicates the last time to get a msg
-    };
+    } values;
 
     //map containing stats about the id message
     map <string, values *> messages;
 
-
     //opening CAN interface
-    //TODO change path to read file and save file into some folder in the project
-    int status = open_can(R"(C:\Users\dorij\OneDrive\Desktop\eagletrt\recruiting-sw-telemetry\candump.log)");
+    int status = open_can("candump.log");
     int count = 0;
     //error in opening file
     if(status == -1){
@@ -165,7 +171,7 @@ int main() {
             //change from IDLE to START if not already in START
             if(state == IDLE) {
                 state = START;
-                cout << "startig START" << endl;
+                cout << "starting START" << endl;
             }
 
         } else if(check_stop_message(message)){
@@ -173,9 +179,9 @@ int main() {
             state = IDLE;
 
             //TODO export csv file of the map using a method
-            //export_csv(messages);
+            //createCSV(messages, file_name);
             fstream csv;
-            string path = "C:\\telemetryCSV\\";
+            string path = "csv\\";
             path.append(file_name);
             path.append("_");
             path.append(to_string(counter_csv_files));
@@ -192,6 +198,10 @@ int main() {
 
             csv.close();
             messages.clear();//remove all data collected
+
+             //TODO remove this print below
+            cout << "Finish of START status" << endl;
+            //end START status
         }
 
         //if in start, saving values in map
@@ -231,9 +241,6 @@ int main() {
                 iterator->second->mean_time = mean;
             }
 
-            //TODO remove this print below
-            cout << "Finish of START status" << endl;
-            //end if START status
         }
 
         //TODO remove print debug msg
@@ -347,4 +354,27 @@ string getPayload(string line){
     }
 
     return sub;
+}
+
+int createCSV(map<string, values *> messages, string file_name){
+    fstream csv;
+    string path = "csv\\";
+    path.append(file_name);
+    path.append("_");
+    path.append(to_string(counter_csv_files));
+    counter_csv_files++;//update che number of csv files created
+    csv.open(path+".csv", ios::out);
+
+    if(csv.fail()){
+        cout << "Error creating csv file" << endl;
+        return 1;
+    }
+
+    for (const auto &message: messages)
+        csv << message.first << "," << message.second->nMsg << "," << message.second->mean_time << "\n";
+
+    csv.close();
+    messages.clear();//remove all data collected
+
+    return 0;
 }
