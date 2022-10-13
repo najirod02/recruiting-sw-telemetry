@@ -92,33 +92,24 @@ int64_t hexadecimalToDecimal(string hexVal);
  */
 int createCSV(auto messages, const string& file_name);
 
-//TODO notify bug in fake_receiver.c
+//TODO notify bug as wrote in bugs section of readme
+//TODO can candumpfile.log be located where you want? ask
+//TODO push files
 /**
  * file log which saves every data with millis in located in
- * \bin\logs\
+ * \bin\
  *
  * file csv which saves the data from start sessions located in
- * \bin\csv\
- *
- * the file used for starting the start interface is candump.log, located in
  * \bin\
+ *
+ * the file used for starting the start interface is candump.log located in
+ * \bin\ (NOTE that candump.log was not initially in \bin but next to CMakeLists.txt)
  */
 int main() {
     using std::chrono::high_resolution_clock;
     using std::chrono::duration_cast;
     using std::chrono::duration;
     using std::chrono::milliseconds;
-
-    //file for log
-    string file_name = createNameFile();
-    ofstream log;
-    log.open("logs\\"+file_name+".log");
-
-    //error opening log file
-    if (log.fail()) {
-        cout << "Error creating output file";
-        return 1;
-    }
 
     //the program start at IDLE state
     STATUS state = IDLE;
@@ -138,6 +129,17 @@ int main() {
     //error in opening file
     if(status == -1){
         cout << "Error opening CAN interface";
+        return 1;
+    }
+
+    //file for log
+    string file_name = createNameFile();
+    ofstream log;
+    log.open(file_name+".log");
+
+    //error opening log file
+    if (log.fail()) {
+        cout << "Error creating output file";
         return 1;
     }
 
@@ -162,10 +164,9 @@ int main() {
             //write on log file the millis and the message received
             duration<double, std::milli> ms_double = (t2 - t1);//to get value, ms_double.count()
             logMsg.append(to_string(ms_double.count()));
-            logMsg.append(" ");
+            logMsg.push_back(' ');
             logMsg.append(message);
-            logMsg.append("\n");
-            log << logMsg;
+            log << logMsg << endl;
             logMsg.clear();
             //------------------------------------------------
 
@@ -333,7 +334,7 @@ string getPayload(string line){
 
 int createCSV(auto messages, const string& file_name){
     fstream csv;
-    string path = "csv\\";
+    string path = "";
     path.append(file_name);
     path.append("_");
     path.append(to_string(counter_csv_files));

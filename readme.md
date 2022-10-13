@@ -147,7 +147,8 @@ This will build the executable that will be located in `./bin` directory.
 
 ## Bugs
 
-Bug in fake_receiver.c (method: int can_receive(char message[MAX_CAN_MESSAGE_SIZE]);
-) where, in some cases, the function doesn't put the end line char
-after saving the chars of the current line read from the can file.
-It leads, when printing and saving the line in the log file, to see a string with also garbage characters.
+Bug when retrieving the message from the method "can_receive" in fake_receiver.c.
+The function returns the correct message but when it is wrote in the log file,
+the file contains the message with a non-printable character, SOH (start of heading).
+This bug is costant at the 4th iteration of reading if kept the same candumbp.log file
+contained in bin folder.

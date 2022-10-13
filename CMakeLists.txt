@@ -30,3 +30,6 @@ add_executable(project_2 main.cpp)
 add_executable(project_2.2 main.cpp fake_receiver.c)
 add_library(project_library STATIC fake_receiver.c)
 target_link_libraries(project_2 ${PROJECT_NAME})
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/candump.log
+        ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
