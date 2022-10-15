@@ -5,6 +5,8 @@
 #include <ctime>
 #include <fstream>
 #include <cstring>
+#include <fileapi.h>
+#include <filesystem>
 
 using namespace std;
 using std::chrono::high_resolution_clock;
@@ -25,15 +27,24 @@ const string STOP_1 = "0A0#66FF";
 const int MAX_SIZE_ID = 3;
 const int MAX_SIZE_PAYLOAD = 16;
 
-//const for buffer size
+//const for buffers size
 const int MAX_WRITE_MSG_SIZE = 200;
+const int MAX_PATH_SIZE= 500;
 
 //these are the possible states
 //TODO use START_PARSE state to parse the messages
+//TODO push files, mem check (delete message->second), check on pc if it creates the dump on bin
 enum STATUS{IDLE, START, START_PARSE};
 
 //counter for csv files
-static int counter_csv_files = 1;
+int counter_csv_files = 1;
+
+/**
+ * find the absolute path of a file
+ * @param file the file with a relative ppath
+ * @return a string of the absolute path of the file
+ */
+char* getAbsolutePath(const char *file);
 
 /**
  * create a unique string to use it as name for a file using date and time system
@@ -98,23 +109,23 @@ int64_t hexadecimalToDecimal(string hexVal);
  */
 int createCSV(auto messages, const string& file_name);
 
-//TODO separate reading (first read, then stats)
-//TODO check mem leak (when clearing the map)
-//TODO candump.log MUST be in the original position
 /**
- * file log which saves every data with millis in located in
+ * file log which saves every data with millis is located in
  * \bin\
  *
- * file csv which saves the data from start sessions located in
+ * file csv which saves the data from start sessions is located in
  * \bin\
  *
- * the file used for starting the start interface is candump.log located in
- * \bin\ (NOTE that candump.log was not initially in \bin but next to CMakeLists.txt)
+ * the file used for starting the start interface is candump.log
  */
+
 int main() {
-    //opening CAN interface
-    //error in opening CAN interface
-    if(open_can("candump.log") == -1){
+
+    //------------------ opening CAN interface --------------------------------------
+
+    char * path = getAbsolutePath("candump.log");
+    if(open_can(path) == -1){
+        //error in opening CAN interface
         cout << "Error opening CAN interface";
         return 1;
     }
@@ -124,8 +135,8 @@ int main() {
     fstream logCAN;
     logCAN.open(file_name + ".log", ios::out);
 
-    //error opening log file
     if (logCAN.fail()) {
+        //error opening log file
         cout << "Error creating output log file for writing";
         return 1;
     }
@@ -133,9 +144,6 @@ int main() {
     //reading messages
     char writeMs[MAX_WRITE_MSG_SIZE];//the message to be copied in the file
     char message[MAX_CAN_MESSAGE_SIZE];//the message read
-
-    //the program start at IDLE state
-    STATUS state = IDLE;
 
     //variable to count the time between every message
     auto t1 = high_resolution_clock::now();
@@ -156,18 +164,24 @@ int main() {
     logCAN.close();
     close_can();
 
+    //-------- finish reading can interface -----------------------------------------
+
+    //the program start at IDLE state
+    STATUS state = IDLE;
+
     //reading the log file and do stats
     fstream readLog;
     readLog.open(file_name+".log", ios::in);
 
     if(readLog.fail()){
+        //error opening the log file
         cout << "Error opening the log file for reading" << endl;
         return 1;
     }
 
     //struct to contain values about a message
     typedef struct{
-        int nMsg;
+        int nMsg;//number of times of the mesg
         double mean_time;
         double last_time;//indicates the last time to get a msg
     } values;
@@ -177,25 +191,30 @@ int main() {
 
     double ms;//read millis from file
 
-   char msg[MAX_CAN_MESSAGE_SIZE+1];//sapce needed to copy the string and the terminal char
-   while(!readLog.eof()){
+    char msg[200];//space needed to copy the string and the terminal char
+    while(!readLog.eof()){
         //read per line millis and msg
         readLog >> ms >> msg;
 
+        //-------------------- mod the status if needed -----------------------------------
         //check if the message is a start or a stop message
         if (check_start_message(msg)) {
             //change from IDLE to START if not already in START
             if (state == IDLE)
                 state = START;
 
+
         } else if (check_stop_message(msg)) {
             //change from START to IDLE
             state = IDLE;
 
+            //write csv file
             createCSV(messages, file_name);
             //end START status
         }
+        //----------------------------------------------------------------------------
 
+        //--------- writing data -----------------------------------------------------
         //if in start, saving values in map
         if (state == START) {
             //search for an existing id
@@ -240,6 +259,8 @@ int main() {
 
     //close log file
     readLog.close();
+
+    delete path;
 
     return 0;
 }
@@ -315,7 +336,6 @@ string getId(string line){
     for (int i = 0; line[i] != '#'; i++)
         sub.push_back(line[i]);
 
-
     return sub;
 }
 
@@ -323,8 +343,11 @@ string getPayload(string line){
     string sub;
     int index = 0;
 
-    for(int index=0; line[index]!='#'; index++){
-        //do nothing, ignore the chars to get the payload
+    //to exclude the id part
+    for(char c : line){
+        index++;
+        if(c == '#')
+            break;
     }
 
     for(index; index<line.size(); index++){
@@ -350,11 +373,27 @@ int createCSV(auto messages, const string& file_name){
 
     for (const auto &message: messages) {
         csv << message.first << "," << message.second->nMsg << "," << message.second->mean_time << "\n";
-        //delete every struct from map as it is not needed anymore
-        delete message.second;
     }
+
     csv.close();
     messages.clear();//remove all data collected
 
     return 0;
+}
+
+char * getAbsolutePath(const char *file){
+    auto path = std::filesystem::absolute(file);
+    string pathStr = path.string();
+    string subString = "\\bin";
+
+    //remove the bin directory
+    int start_position_to_erase = pathStr.find(subString);
+
+    if(start_position_to_erase != string::npos)
+        pathStr.erase(start_position_to_erase,subString.length());
+
+    char *p = new char[MAX_PATH_SIZE];
+    strcpy(p, pathStr.c_str());
+
+    return p;
 }
