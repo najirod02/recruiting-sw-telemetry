@@ -5,7 +5,6 @@
 #include <ctime>
 #include <fstream>
 #include <cstring>
-#include <fileapi.h>
 #include <filesystem>
 
 using namespace std;
@@ -33,7 +32,6 @@ const int MAX_PATH_SIZE= 500;
 
 //these are the possible states
 //TODO use START_PARSE state to parse the messages
-//TODO push files, mem check (delete message->second), check on pc if it creates the dump on bin
 enum STATUS{IDLE, START, START_PARSE};
 
 //counter for csv files
@@ -107,7 +105,7 @@ int64_t hexadecimalToDecimal(string hexVal);
  * @param file_name the name to give to the file
  * @return return 1 if some errors occurs
  */
-int createCSV(auto messages, const string& file_name);
+int createCSV(auto &messages, const string& file_name);
 
 /**
  * file log which saves every data with millis is located in
@@ -191,7 +189,7 @@ int main() {
 
     double ms;//read millis from file
 
-    char msg[200];//space needed to copy the string and the terminal char
+    char msg[MAX_WRITE_MSG_SIZE];//space needed to copy the string and the terminal char
     while(!readLog.eof()){
         //read per line millis and msg
         readLog >> ms >> msg;
@@ -221,7 +219,7 @@ int main() {
             string id, payload;
 
             id = getId(msg);
-            //payload = getPayload(msg);
+            payload = getPayload(msg);
 
             //save the iterator of the search
             auto iterator = messages.find(id);
@@ -357,7 +355,7 @@ string getPayload(string line){
     return sub;
 }
 
-int createCSV(auto messages, const string& file_name){
+int createCSV(auto &messages, const string& file_name){
     fstream csv;
     string path = "";
     path.append(file_name);
