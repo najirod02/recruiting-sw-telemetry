@@ -17,10 +17,11 @@ extern "C"{
     #include "fake_receiver.h"
 }
 
-//const for starting end ending session
+//const for starting end ending sessions
 const string START_1 = "0A0#6601";
 const string START_2 = "0A0#FF01";
 const string STOP_1 = "0A0#66FF";
+const string START_PARSE_1 = "227#78767676767676";
 
 //const for id and payload size
 const int MAX_SIZE_ID = 3;
@@ -31,7 +32,6 @@ const int MAX_WRITE_MSG_SIZE = 200;
 const int MAX_PATH_SIZE= 500;
 
 //these are the possible states
-//TODO use START_PARSE state to parse the messages
 enum STATUS{IDLE, START, START_PARSE};
 
 //counter for csv files
@@ -42,13 +42,13 @@ int counter_csv_files = 1;
  * @param file the file with a relative ppath
  * @return a string of the absolute path of the file
  */
-char* getAbsolutePath(const char *file);
+char * getAbsolutePath(const char *file);
 
 /**
  * create a unique string to use it as name for a file using date and time system
  * @return the string created
  */
-string createNameFile();
+char * createNameFile();
 
 /**
  * check if the message read is a start message
@@ -65,39 +65,45 @@ bool check_start_message(string line);
 bool check_stop_message(string line);
 
 /**
+ * check if the message read is a start parsing message
+ * @param line the line read
+ * @return true if is a start parsing message, false otherwise
+ */
+bool check_parse_message(string line);
+/**
  * parse the id message from exa base to deca base
  * @param line the message read
  * @return the deca value of the message in 12bit, -1 if some errors occur (eg. not even payload chars)
  */
-int16_t parseId(string &line);
+int16_t parseId(const char * line);
 
 /**
  * parse the payload message from exa base to deca base
  * @param line the message read
  * @return the deca value of the message in 64bit, -1 if some errors occur (eg. not even payload chars)
  */
-int64_t parsePayload(string &line);
+uintmax_t parsePayload(const char * line);
 
 /**
  * get the substring id from the message
  * @param line the message red
  * @return the id
  */
-string getId(string line);
+char * getId(const char * line);
 
 /**
  * get the substring payload from the message
  * @param line the message red
  * @return the payload
  */
-string getPayload(string line);
+char * getPayload(const char * line);
 
 /**
  * convert the exa string to decimal base value
  * @param hexVal the string
  * @return the decimal value in 64 bit
  */
-int64_t hexadecimalToDecimal(string hexVal);
+uintmax_t hexadecimalToDecimal(const char * hexVal);
 
 /**
  * create a csv file and save it in bin folder with name file_name
@@ -117,6 +123,7 @@ int createCSV(auto &messages, const string& file_name);
  * the file used for starting the start interface is candump.log
  */
 
+//TODO use START_PARSE state to parse the messages
 int main() {
 
     //------------------ opening CAN interface --------------------------------------
@@ -177,6 +184,16 @@ int main() {
         return 1;
     }
 
+    //writing data on parse log
+    fstream writeParse;
+    writeParse.open(file_name+"_parse.log", ios::out);
+
+    if(writeParse.fail()){
+        //error opening the parse log file
+        cout << "Error opening the parse log file" << endl;
+        return 1;
+    }
+
     //struct to contain values about a message
     typedef struct{
         int nMsg;//number of times of the mesg
@@ -188,8 +205,9 @@ int main() {
     map <string, values *> messages;
 
     double ms;//read millis from file
+    char msg[MAX_WRITE_MSG_SIZE];//space needed to copy the string
+    char * id;
 
-    char msg[MAX_WRITE_MSG_SIZE];//space needed to copy the string and the terminal char
     while(!readLog.eof()){
         //read per line millis and msg
         readLog >> ms >> msg;
@@ -201,14 +219,21 @@ int main() {
             if (state == IDLE)
                 state = START;
 
-
         } else if (check_stop_message(msg)) {
-            //change from START to IDLE
+            if(state == START) {
+                //write csv file
+                createCSV(messages, file_name);
+            }
+
+            //change from START or START_PARSE to IDLE
             state = IDLE;
 
-            //write csv file
-            createCSV(messages, file_name);
             //end START status
+        } else if(check_parse_message(msg)){
+            //if we are already in START mode, do nothing else pass in parse mode
+            if(state != START)
+                state = START_PARSE;
+
         }
         //----------------------------------------------------------------------------
 
@@ -216,12 +241,8 @@ int main() {
         //if in start, saving values in map
         if (state == START) {
             //search for an existing id
-            string id, payload;
-
-            id = getId(msg);
-            payload = getPayload(msg);
-
             //save the iterator of the search
+            id = getId(msg);
             auto iterator = messages.find(id);
 
             //if there, increment counter and update mean
@@ -245,6 +266,9 @@ int main() {
             }
 
             //finish if START
+        } else if(state == START_PARSE){
+            //parse the message and put it in the log file
+            writeParse << parseId(msg) << "#" << parsePayload(msg) << endl;
         }
 
         //end while
@@ -255,23 +279,25 @@ int main() {
         createCSV(messages, file_name);
     }
 
-    //close log file
+    //close files
     readLog.close();
+    writeParse.close();
 
     delete path;
+    delete id;
 
     return 0;
 }
 
-string createNameFile(){
+char * createNameFile(){
     time_t rawtime;
     struct tm * timeinfo;
-    char buffer[80];
+    char *buffer = new char[80];
     time (&rawtime);
     timeinfo = localtime(&rawtime);
 
     strftime(buffer,80,"%d-%m-%Y %H-%M-%S",timeinfo);
-    return string(buffer);
+    return buffer;
 }
 
 bool check_start_message(string line){
@@ -282,23 +308,28 @@ bool check_stop_message(string line){
     return (line == STOP_1);
 }
 
-int16_t parseId(string &line){
-    //split the message in two parts, id and payload
-    string id = getId(line);
-
-    if(id.size()<=MAX_SIZE_ID){
-        //everything is ok
-        return hexadecimalToDecimal(id);
-    } else {
-        //error of syntax
-        return -1;
-    }
+bool check_parse_message(string line){
+    return (line == START_PARSE_1);
 }
 
-int64_t parsePayload(string &line){
-    string payload = getPayload(line);
+int16_t parseId(const char * line){
+    //split the message in two parts, id and payload
+    char * id = getId(line);
 
-    if(payload.size()<=MAX_SIZE_PAYLOAD && payload.size()%2==0){
+    int size = strlen(id);
+
+    if(size<=MAX_SIZE_ID){
+        return hexadecimalToDecimal(id);
+    }
+
+    return -1;
+}
+
+uintmax_t parsePayload(const char * line){
+    char * payload = getPayload(line);
+    int size = strlen(payload);
+
+    if(size<=MAX_SIZE_PAYLOAD && size%2==0){
         //everything ok
         return hexadecimalToDecimal(payload);
     } else {
@@ -307,13 +338,12 @@ int64_t parsePayload(string &line){
     }
 }
 
-int64_t hexadecimalToDecimal(string hexVal){
-    int len = hexVal.size();
-    int base = 1;
-    int64_t dec_val = 0;
+uintmax_t hexadecimalToDecimal(const char * hexVal){
+    int len = strlen(hexVal);
+    long long int base = 1;
+    uintmax_t dec_val = 0;
 
     for (int i = len - 1; i >= 0; i--) {
-
         if (hexVal[i] >= '0' && hexVal[i] <= '9') {
             dec_val += (int(hexVal[i]) - 48) * base;
 
@@ -328,36 +358,40 @@ int64_t hexadecimalToDecimal(string hexVal){
     return dec_val;
 }
 
-string getId(string line){
-    string sub;
+char * getId(const char * line){
+    char * sub = new char[MAX_SIZE_ID];
 
-    for (int i = 0; line[i] != '#'; i++)
-        sub.push_back(line[i]);
+    int i=0;
+    for (; line[i] != '#'; i++){
+        sub[i] = line[i];
+    }
+    sub[i] = '\0';
 
     return sub;
 }
 
-string getPayload(string line){
-    string sub;
+char * getPayload(const char *line){
+    char *sub = new char[MAX_SIZE_PAYLOAD];
     int index = 0;
 
     //to exclude the id part
-    for(char c : line){
-        index++;
-        if(c == '#')
-            break;
+    for(char c; c!='#'; index++){
+        c = line[index];
     }
 
-    for(index; index<line.size(); index++){
-        sub.push_back(line[index]);
+    int size = strlen(line);
+    int i=0;
+    for(; index<size; i++, index++){
+        sub[i] = line[index];
     }
+    sub[i] = '\0';
 
     return sub;
 }
 
 int createCSV(auto &messages, const string& file_name){
     fstream csv;
-    string path = "";
+    string path;
     path.append(file_name);
     path.append("_");
     path.append(to_string(counter_csv_files));
@@ -381,7 +415,7 @@ int createCSV(auto &messages, const string& file_name){
 
 char * getAbsolutePath(const char *file){
     auto path = std::filesystem::absolute(file);
-    string pathStr = path.string();
+    auto pathStr = path.string();
     string subString = "\\bin";
 
     //remove the bin directory
