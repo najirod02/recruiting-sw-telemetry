@@ -64,8 +64,10 @@ int can_receive(char message[MAX_CAN_MESSAGE_SIZE]){
     }
 
     while((c = fgetc(can)) != EOF){
-        if(c == '\n')
+        if(c == '\n') {
+            message[bytes_received] = '\0';
             break;
+        }
         message[bytes_received] = c;
         bytes_received ++;
     }

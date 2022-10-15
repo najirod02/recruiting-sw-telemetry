@@ -18,7 +18,8 @@
 						0,
 						1,
 						2,
-						3
+						3,
+						4
 					]
 				}
 			],
@@ -36,7 +37,8 @@
 						0,
 						1,
 						2,
-						3
+						3,
+						4
 					]
 				}
 			],
@@ -52,7 +54,7 @@
 				{
 					"directoryIndex" : 0,
 					"id" : "project_2::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-project_2-Debug-69433502f0808072c0e3.json",
+					"jsonFile" : "target-project_2-Debug-96526a811cbb2625bdaf.json",
 					"name" : "project_2",
 					"projectIndex" : 0
 				},
@@ -66,8 +68,15 @@
 				{
 					"directoryIndex" : 0,
 					"id" : "project_library::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-project_library-Debug-f2f413bc731b2e9b58a5.json",
+					"jsonFile" : "target-project_library-Debug-1c9bf361783b4fee2d41.json",
 					"name" : "project_library",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "telemetry::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-telemetry-Debug-5f67a9175c212f693a2e.json",
+					"name" : "telemetry",
 					"projectIndex" : 0
 				}
 			]

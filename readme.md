@@ -155,4 +155,5 @@ contained in bin folder.
 
 ## Fixed bugs
 
-1) Bug fixed writing instead of ofstream, fstream and specifing in open method the mode which is ios::out.
+1) Bug fixed adding the terminal character of string '\0' in the function can_receive() when ending
+    the copy cycle.

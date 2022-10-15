@@ -1,13 +1,16 @@
-#include <cstdio>
 #include <iostream>
 #include <map>
 #include <chrono>
 #include <string>
-#include <bits/stdc++.h>
 #include <ctime>
-#include <cstdint>
+#include <fstream>
+#include <cstring>
 
 using namespace std;
+using std::chrono::high_resolution_clock;
+using std::chrono::duration_cast;
+using std::chrono::duration;
+using std::chrono::milliseconds;
 
 extern "C"{
     #include "fake_receiver.h"
@@ -22,12 +25,15 @@ const string STOP_1 = "0A0#66FF";
 const int MAX_SIZE_ID = 3;
 const int MAX_SIZE_PAYLOAD = 16;
 
+//const for buffer size
+const int MAX_WRITE_MSG_SIZE = 200;
+
 //these are the possible states
 //TODO use START_PARSE state to parse the messages
 enum STATUS{IDLE, START, START_PARSE};
 
 //counter for csv files
-int counter_csv_files = 1;
+static int counter_csv_files = 1;
 
 /**
  * create a unique string to use it as name for a file using date and time system
@@ -92,9 +98,9 @@ int64_t hexadecimalToDecimal(string hexVal);
  */
 int createCSV(auto messages, const string& file_name);
 
-//TODO notify bug as wrote in bugs section of readme
-//TODO can candumpfile.log be located where you want? ask
-//TODO push files
+//TODO separate reading (first read, then stats)
+//TODO check mem leak (when clearing the map)
+//TODO candump.log MUST be in the original position
 /**
  * file log which saves every data with millis in located in
  * \bin\
@@ -106,13 +112,58 @@ int createCSV(auto messages, const string& file_name);
  * \bin\ (NOTE that candump.log was not initially in \bin but next to CMakeLists.txt)
  */
 int main() {
-    using std::chrono::high_resolution_clock;
-    using std::chrono::duration_cast;
-    using std::chrono::duration;
-    using std::chrono::milliseconds;
+    //opening CAN interface
+    //error in opening CAN interface
+    if(open_can("candump.log") == -1){
+        cout << "Error opening CAN interface";
+        return 1;
+    }
+
+    //log file for CAN interface
+    string file_name = createNameFile();
+    fstream logCAN;
+    logCAN.open(file_name + ".log", ios::out);
+
+    //error opening log file
+    if (logCAN.fail()) {
+        cout << "Error creating output log file for writing";
+        return 1;
+    }
+
+    //reading messages
+    char writeMs[MAX_WRITE_MSG_SIZE];//the message to be copied in the file
+    char message[MAX_CAN_MESSAGE_SIZE];//the message read
 
     //the program start at IDLE state
     STATUS state = IDLE;
+
+    //variable to count the time between every message
+    auto t1 = high_resolution_clock::now();
+
+    //reading can interface
+    while(can_receive(message) != -1){//error or EOF
+        auto t2 = high_resolution_clock::now();//time after the message
+        //write on log file the millis and the message received
+        duration<double, std::milli> ms_double = (t2 - t1);//to get value, ms_double.count()
+
+        strcpy(writeMs, to_string(ms_double.count()).c_str());
+        strcat(writeMs, " ");
+        strcat(writeMs, message);
+        logCAN << writeMs << endl;
+    }
+
+    //closing CAN interface and log file
+    logCAN.close();
+    close_can();
+
+    //reading the log file and do stats
+    fstream readLog;
+    readLog.open(file_name+".log", ios::in);
+
+    if(readLog.fail()){
+        cout << "Error opening the log file for reading" << endl;
+        return 1;
+    }
 
     //struct to contain values about a message
     typedef struct{
@@ -124,109 +175,63 @@ int main() {
     //map containing stats about the id message
     map <string, values *> messages;
 
-    //opening CAN interface
-    int status = open_can("candump.log");
-    //error in opening file
-    if(status == -1){
-        cout << "Error opening CAN interface";
-        return 1;
-    }
+    double ms;//read millis from file
 
-    //file for log
-    string file_name = createNameFile();
-    ofstream log;
-    log.open(file_name+".log");
+   char msg[MAX_CAN_MESSAGE_SIZE+1];//sapce needed to copy the string and the terminal char
+   while(!readLog.eof()){
+        //read per line millis and msg
+        readLog >> ms >> msg;
 
-    //error opening log file
-    if (log.fail()) {
-        cout << "Error creating output file";
-        return 1;
-    }
+        //check if the message is a start or a stop message
+        if (check_start_message(msg)) {
+            //change from IDLE to START if not already in START
+            if (state == IDLE)
+                state = START;
 
-    //variable to count the time between every message
-    auto t1 = high_resolution_clock::now();
-    string logMsg;
+        } else if (check_stop_message(msg)) {
+            //change from START to IDLE
+            state = IDLE;
 
-    //reading messages
-    int nByte;//numbers of byte read
-    char message[MAX_CAN_MESSAGE_SIZE];//the message read
-
-    do{
-        //there's a bug in can_receive, in some cases the function
-        //when saving the chars in the buffer it doesn't put the end line char.
-        //in the end, it saves in log file a line with also garbage character
-        nByte = can_receive(message);
-        auto t2 = high_resolution_clock::now();//time after the message
-
-        //calculate the time elapsed from the beginning
-        //if no byte read then don't print anything on any file
-        if(nByte != -1) {
-            //write on log file the millis and the message received
-            duration<double, std::milli> ms_double = (t2 - t1);//to get value, ms_double.count()
-            logMsg.append(to_string(ms_double.count()));
-            logMsg.push_back(' ');
-            logMsg.append(message);
-            log << logMsg << endl;
-            logMsg.clear();
-            //------------------------------------------------
-
-            //check if the message is a start or a stop message
-            if (check_start_message(message)) {
-                //change from IDLE to START if not already in START
-                if (state == IDLE)
-                    state = START;
-
-            } else if (check_stop_message(message)) {
-                //change from START to IDLE
-                state = IDLE;
-
-                createCSV(messages, file_name);
-                //end START status
-            }
-
-            //if in start, saving values in map
-            if (state == START) {
-                //search for an existing id
-                string id, payload;
-
-                id = getId(message);
-                payload = getPayload(message);
-
-                //save the iterator of the search
-                auto iterator = messages.find(id);
-
-                //if there, increment counter and update mean
-                //else, create new entry for key = ID
-                if (iterator == messages.end()) {
-                    //create new struct for the current id
-                    auto *v = new values;
-                    v->nMsg = 1;
-
-                    duration<double, std::milli> ms_double = (t2 - t1);
-                    v->mean_time = ms_double.count();
-                    v->last_time = ms_double.count();
-
-                    messages.insert(pair<string, values *>(id, v));
-                } else {
-                    iterator->second->nMsg++;//update numbers of message with that id
-
-                    //update last_time with the last one read
-                    duration<double, std::milli> ms_double = (t2 - t1);
-                    double last_time = ms_double.count();
-                    iterator->second->last_time = last_time;
-
-                    //update mean
-                    double mean = iterator->second->mean_time;
-                    mean = (mean + last_time) / iterator->second->nMsg;
-                    iterator->second->mean_time = mean;
-                }
-
-            }
-
-            //finish if(nByte != -1)
+            createCSV(messages, file_name);
+            //end START status
         }
 
-    }while(nByte != -1);//error in reading or eof
+        //if in start, saving values in map
+        if (state == START) {
+            //search for an existing id
+            string id, payload;
+
+            id = getId(msg);
+            //payload = getPayload(msg);
+
+            //save the iterator of the search
+            auto iterator = messages.find(id);
+
+            //if there, increment counter and update mean
+            //else, create new entry for key = ID
+            if (iterator == messages.end()) {
+                //create new struct for the current id
+                auto *v = new values;
+                v->nMsg = 1;
+                v->mean_time = ms;
+                v->last_time = ms;
+                messages.insert(pair<string, values *>(id, v));
+
+            } else {
+                iterator->second->nMsg++;//update numbers of message with that id
+                //update last_time with the last one read
+                iterator->second->last_time = ms;
+                //update mean
+                double mean = iterator->second->mean_time;
+                mean = (mean + ms) / iterator->second->nMsg;
+                iterator->second->mean_time = mean;
+            }
+
+            //finish if START
+        }
+
+        //end while
+    }
 
     if(state == START){
         //if we are still in START mode, export the data recorder in any case
@@ -234,10 +239,7 @@ int main() {
     }
 
     //close log file
-    log.close();
-
-    //closing CAN interface
-    close_can();
+    readLog.close();
 
     return 0;
 }
@@ -346,9 +348,11 @@ int createCSV(auto messages, const string& file_name){
         return 1;
     }
 
-    for (const auto &message: messages)
+    for (const auto &message: messages) {
         csv << message.first << "," << message.second->nMsg << "," << message.second->mean_time << "\n";
-
+        //delete every struct from map as it is not needed anymore
+        delete message.second;
+    }
     csv.close();
     messages.clear();//remove all data collected
 

@@ -152,6 +152,47 @@ build ../bin/project_2.2.exe: CXX_EXECUTABLE_LINKER__project_2.2e2_Debug CMakeFi
   TARGET_PDB = project_2.2.exe.dbg
 
 # =============================================================================
+# Object build statements for EXECUTABLE target telemetry
+
+
+#############################################
+# Order-only phony target for telemetry
+
+build cmake_object_order_depends_target_telemetry: phony || CMakeFiles/telemetry.dir
+
+build CMakeFiles/telemetry.dir/main.cpp.obj: CXX_COMPILER__telemetry_Debug C$:/Users/dorij/OneDrive/Desktop/eagletrt/recruiting-sw-telemetry/main.cpp || cmake_object_order_depends_target_telemetry
+  DEP_FILE = CMakeFiles\telemetry.dir\main.cpp.obj.d
+  FLAGS = -pthread -O0 -g -w -g -std=c++20
+  INCLUDES = -IC:/Users/dorij/OneDrive/Desktop/eagletrt/recruiting-sw-telemetry
+  OBJECT_DIR = CMakeFiles\telemetry.dir
+  OBJECT_FILE_DIR = CMakeFiles\telemetry.dir
+
+build CMakeFiles/telemetry.dir/fake_receiver.c.obj: C_COMPILER__telemetry_Debug C$:/Users/dorij/OneDrive/Desktop/eagletrt/recruiting-sw-telemetry/fake_receiver.c || cmake_object_order_depends_target_telemetry
+  DEP_FILE = CMakeFiles\telemetry.dir\fake_receiver.c.obj.d
+  FLAGS = -g
+  INCLUDES = -IC:/Users/dorij/OneDrive/Desktop/eagletrt/recruiting-sw-telemetry
+  OBJECT_DIR = CMakeFiles\telemetry.dir
+  OBJECT_FILE_DIR = CMakeFiles\telemetry.dir
+
+
+# =============================================================================
+# Link build statements for EXECUTABLE target telemetry
+
+
+#############################################
+# Link the executable ..\bin\telemetry.exe
+
+build ../bin/telemetry.exe: CXX_EXECUTABLE_LINKER__telemetry_Debug CMakeFiles/telemetry.dir/main.cpp.obj CMakeFiles/telemetry.dir/fake_receiver.c.obj
+  FLAGS = -pthread -O0 -g -w -g
+  LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
+  OBJECT_DIR = CMakeFiles\telemetry.dir
+  POST_BUILD = cd .
+  PRE_LINK = cd .
+  TARGET_FILE = ..\bin\telemetry.exe
+  TARGET_IMPLIB = libtelemetry.dll.a
+  TARGET_PDB = telemetry.exe.dbg
+
+# =============================================================================
 # Object build statements for STATIC_LIBRARY target project_library
 
 
@@ -221,6 +262,10 @@ build project_2.exe: phony ../bin/project_2.exe
 
 build project_library: phony libproject_library.a
 
+build telemetry: phony ../bin/telemetry.exe
+
+build telemetry.exe: phony ../bin/telemetry.exe
+
 # =============================================================================
 # Folder targets.
 
@@ -229,7 +274,7 @@ build project_library: phony libproject_library.a
 #############################################
 # Folder: C:/Users/dorij/OneDrive/Desktop/eagletrt/recruiting-sw-telemetry/cmake-build-debug
 
-build all: phony libProject2.dll ../bin/project_2.exe ../bin/project_2.2.exe libproject_library.a
+build all: phony libProject2.dll ../bin/project_2.exe ../bin/project_2.2.exe ../bin/telemetry.exe libproject_library.a
 
 # =============================================================================
 # Built-in targets

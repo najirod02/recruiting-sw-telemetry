@@ -28,8 +28,13 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 
 add_executable(project_2 main.cpp)
 add_executable(project_2.2 main.cpp fake_receiver.c)
+add_executable(telemetry main.cpp fake_receiver.c)
 add_library(project_library STATIC fake_receiver.c)
 target_link_libraries(project_2 ${PROJECT_NAME})
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/candump.log
-        ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+
+#[[to copy the candump.log into bin folder]]
+file(COPY candump.log DESTINATION "${CMAKE_CURRENT_LIST_DIR}/bin")
+
+#[[add a dependency on the file candump]]
+configure_file(candump.log "${CMAKE_CURRENT_LIST_DIR}/bin" COPYONLY)
