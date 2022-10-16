@@ -123,7 +123,6 @@ int createCSV(auto &messages, const string& file_name);
  * the file used for starting the start interface is candump.log
  */
 
-//TODO use START_PARSE state to parse the messages
 int main() {
 
     //------------------ opening CAN interface --------------------------------------

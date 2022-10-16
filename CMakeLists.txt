@@ -26,8 +26,7 @@ target_link_libraries(${PROJECT_NAME}
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 
-add_executable(project_2 main.cpp)
-add_executable(project_2.2 main.cpp fake_receiver.c)
-add_executable(telemetry main.cpp fake_receiver.c)
-add_library(project_library STATIC fake_receiver.c)
-target_link_libraries(project_2 ${PROJECT_NAME})
+add_executable(telemetry main.cpp fake_receiver.c fake_receiver.h)
+target_link_libraries(telemetry ${PROJECT_NAME})
+
+configure_file(candump.log ${PROJECT_SOURCE_DIR}/bin COPYONLY)
