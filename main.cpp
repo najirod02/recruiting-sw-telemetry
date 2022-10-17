@@ -265,7 +265,7 @@ int main() {
             payloadParse = parsePayload(msg);
 
             for(int i=0; i< strlen(payload)/2 && payloadParse != nullptr; i++){
-                runFile << payloadParse[i] << " ";
+                runFile << payloadParse[i] << "-";
             }
 
             runFile << endl;
@@ -280,7 +280,7 @@ int main() {
             payloadParse = parsePayload(msg);
 
             for(int i=0; i<strlen(payload)/2 && payloadParse != nullptr; i++){
-                idleFile << payloadParse[i] << " ";
+                idleFile << payloadParse[i] << "-";
             }
 
             idleFile << endl;
