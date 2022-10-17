@@ -21,7 +21,6 @@ extern "C"{
 const string START_1 = "0A0#6601";
 const string START_2 = "0A0#FF01";
 const string STOP_1 = "0A0#66FF";
-const string START_PARSE_1 = "227#78767676767676";
 
 //const for id and payload size
 const int MAX_SIZE_ID = 3;
@@ -65,12 +64,6 @@ bool check_start_message(string line);
 bool check_stop_message(string line);
 
 /**
- * check if the message read is a start parsing message
- * @param line the line read
- * @return true if is a start parsing message, false otherwise
- */
-bool check_parse_message(string line);
-/**
  * parse the id message from exa base to deca base
  * @param line the message read
  * @return the deca value of the message in 12bit, -1 if some errors occur (eg. not even payload chars)
@@ -80,9 +73,9 @@ int16_t parseId(const char * line);
 /**
  * parse the payload message from exa base to deca base
  * @param line the message read
- * @return the deca value of the message in 64bit, -1 if some errors occur (eg. not even payload chars)
+ * @return the deca values of the message of characters pairs, null if there's some errors
  */
-uintmax_t parsePayload(const char * line);
+short * parsePayload(const char * line);
 
 /**
  * get the substring id from the message
@@ -101,9 +94,9 @@ char * getPayload(const char * line);
 /**
  * convert the exa string to decimal base value
  * @param hexVal the string
- * @return the decimal value in 64 bit
+ * @return the decimal value
  */
-uintmax_t hexadecimalToDecimal(const char * hexVal);
+int hexadecimalToDecimal(const char * hexVal);
 
 /**
  * create a csv file and save it in bin folder with name file_name
@@ -126,13 +119,14 @@ int createCSV(auto &messages, const string& file_name);
 int main() {
 
     //------------------ opening CAN interface --------------------------------------
-
     char * path = getAbsolutePath("candump.log");
+
     if(open_can(path) == -1){
         //error in opening CAN interface
         cout << "Error opening CAN interface";
         return 1;
     }
+    delete path;
 
     //log file for CAN interface
     string file_name = createNameFile();
@@ -205,6 +199,7 @@ int main() {
     double ms;//read millis from file
     char msg[MAX_WRITE_MSG_SIZE];
     char * id, * payload;
+    short * payloadParse;
 
     while(!readLog.eof()){
         //read per line millis and msg
@@ -212,6 +207,8 @@ int main() {
 
         //update the map with the message read -----------------------------
         id = getId(msg);
+        payload = getPayload(msg);
+
         auto iterator = messages.find(id);
         //if there, increment counter and update mean
         //else, create new entry for key = ID
@@ -227,7 +224,7 @@ int main() {
             //update the total time
             iterator->second->total_time += ms;
         }
-        //---------------------------------------------------------------
+        //--------------------------------------------------------------------------------
 
         //-------------------- mod the status if needed -----------------------------------
         //check if the message is a start or a stop message
@@ -262,13 +259,36 @@ int main() {
         //if in start, saving values in map
         if (state == RUN) {
             //parse and save the message in the run file
-            runFile << parseId(msg) << "#" << parsePayload(msg) << endl;
+            runFile << parseId(msg) << "#";
+
+            //write every result from parsePayload giving a space for each byte
+            payloadParse = parsePayload(msg);
+
+            for(int i=0; i< strlen(payload)/2 && payloadParse != nullptr; i++){
+                runFile << payloadParse[i] << " ";
+            }
+
+            runFile << endl;
+            delete payloadParse;
+
             //finish if START
         } else if (state == IDLE){
             //parse and save the message in the idle file
-            idleFile << parseId(msg) << "#" << parsePayload(msg) << endl;
+            idleFile << parseId(msg) << "#";
+
+            //write every result from parsePayload giving a space for each byte
+            payloadParse = parsePayload(msg);
+
+            for(int i=0; i<strlen(payload)/2 && payloadParse != nullptr; i++){
+                idleFile << payloadParse[i] << " ";
+            }
+
+            idleFile << endl;
+            delete payloadParse;
         }
 
+        delete id;
+        delete payload;
         //end while
     }
 
@@ -279,9 +299,6 @@ int main() {
 
     //create statistics file
     createCSV(messages, file_name+"_stats.log");
-
-    delete path;
-    delete id;
 
     return 0;
 }
@@ -305,10 +322,6 @@ bool check_stop_message(string line){
     return (line == STOP_1);
 }
 
-bool check_parse_message(string line){
-    return (line == START_PARSE_1);
-}
-
 int16_t parseId(const char * line){
     //split the message in two parts, id and payload
     char * id = getId(line);
@@ -322,23 +335,36 @@ int16_t parseId(const char * line){
     return -1;
 }
 
-uintmax_t parsePayload(const char * line){
+
+short * parsePayload(const char * line){
     char * payload = getPayload(line);
     int size = strlen(payload);
+    char buffer[3];//buffer to contain the two characters to parse
+    short * results;//vector to contain the parsed pairs
 
+    //check if we have an even pair of characters
     if(size<=MAX_SIZE_PAYLOAD && size%2==0){
         //everything ok
-        return hexadecimalToDecimal(payload);
+        results = new short[(size/2)];
+        for(int i=0, j=0; i<size; i++, j++){
+            buffer[0] = payload[i];
+            buffer[1] = payload[i+1];
+            buffer[2] = '\0';
+            i++;
+            results[j] = hexadecimalToDecimal(buffer);
+        }
+
+        return results;
     } else {
         //error in syntax
-        return -1;
+        return nullptr;
     }
 }
 
-uintmax_t hexadecimalToDecimal(const char * hexVal){
+int hexadecimalToDecimal(const char * hexVal){
     int len = strlen(hexVal);
-    long long int base = 1;
-    uintmax_t dec_val = 0;
+    int base = 1;
+    int dec_val = 0;
 
     for (int i = len - 1; i >= 0; i--) {
         if (hexVal[i] >= '0' && hexVal[i] <= '9') {
@@ -410,13 +436,20 @@ int createCSV(auto &messages, const string& file_name){
 char * getAbsolutePath(const char *file){
     auto path = std::filesystem::absolute(file);
     auto pathStr = path.string();
-    string subString = "\\bin";
+    string subString1 = "\\bin";//Windows system
+    string subString2 = "/bin";//linux system
 
-    //remove the bin directory
-    int start_position_to_erase = pathStr.find(subString);
+    //remove the bin directory to find files in the project directory
+    int start_position_to_erase = pathStr.find(subString1);
+    int start_position_to_erase2 = pathStr.find(subString2);
 
+    //in case we are in Windows system
     if(start_position_to_erase != string::npos)
-        pathStr.erase(start_position_to_erase,subString.length());
+        pathStr.erase(start_position_to_erase,subString1.length());
+
+    //in case we are in linux system
+    if(start_position_to_erase2 != string::npos)
+        pathStr.erase(start_position_to_erase2,subString2.length());
 
     char *p = new char[MAX_PATH_SIZE];
     strcpy(p, pathStr.c_str());
