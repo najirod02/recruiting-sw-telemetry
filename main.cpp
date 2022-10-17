@@ -32,10 +32,10 @@ const int MAX_WRITE_MSG_SIZE = 200;
 const int MAX_PATH_SIZE= 500;
 
 //these are the possible states
-enum STATUS{IDLE, START, START_PARSE};
+enum STATUS{IDLE, RUN};
 
-//counter for csv files
-int counter_csv_files = 1;
+//counter for run files
+int counter_run_files = 0;
 
 /**
  * find the absolute path of a file
@@ -183,104 +183,102 @@ int main() {
         return 1;
     }
 
-    //writing data on parse log
-    fstream writeParse;
-    writeParse.open(file_name+"_parse.log", ios::out);
+    //writing data on the files
+    fstream idleFile, runFile;
 
-    if(writeParse.fail()){
+    idleFile.open(file_name+"_idle.log", ios::out);
+    if(idleFile.fail()){
         //error opening the parse log file
-        cout << "Error opening the parse log file" << endl;
+        cout << "Error opening the idle file" << endl;
         return 1;
     }
 
     //struct to contain values about a message
     typedef struct{
-        int nMsg;//number of times of the mesg
-        double mean_time;
-        double last_time;//indicates the last time to get a msg
+        int nMsg;//number of times of the msg
+        double total_time;
     } values;
 
     //map containing stats about the id message
     map <string, values *> messages;
 
     double ms;//read millis from file
-    char msg[MAX_WRITE_MSG_SIZE];//space needed to copy the string
-    char * id;
+    char msg[MAX_WRITE_MSG_SIZE];
+    char * id, * payload;
 
     while(!readLog.eof()){
         //read per line millis and msg
         readLog >> ms >> msg;
 
+        //update the map with the message read -----------------------------
+        id = getId(msg);
+        auto iterator = messages.find(id);
+        //if there, increment counter and update mean
+        //else, create new entry for key = ID
+        if (iterator == messages.end()) {
+            //create new struct for the current id
+            auto *v = new values;
+            v->nMsg = 1;
+            v->total_time = ms;
+            messages.insert(pair<string, values *>(id, v));
+
+        } else {
+            iterator->second->nMsg++;//update numbers of message with that id
+            //update the total time
+            iterator->second->total_time += ms;
+        }
+        //---------------------------------------------------------------
+
         //-------------------- mod the status if needed -----------------------------------
         //check if the message is a start or a stop message
         if (check_start_message(msg)) {
-            //change from IDLE to START if not already in START
-            if (state == IDLE)
-                state = START;
+            //change from IDLE to RUN if not already in RUN (if so, then do nothing)
+            if (state == IDLE) {
+                state = RUN;
+                //create new start file
+                counter_run_files++;
+                runFile.open(file_name + "_run_" + to_string(counter_run_files) + ".log", ios::out);
 
-        } else if (check_stop_message(msg)) {
-            if(state == START) {
-                //write csv file
-                createCSV(messages, file_name);
+                if(runFile.fail()){
+                    //error opening the parse log file
+                    cout << "Error opening the run file n." << counter_run_files << endl;
+                    return 1;
+                }
+
             }
 
-            //change from START or START_PARSE to IDLE
+        } else if (check_stop_message(msg)) {
+            if(state == RUN) {
+                //close run file
+                runFile.close();
+            }
+            //change from START to IDLE
             state = IDLE;
-
             //end START status
-        } else if(check_parse_message(msg)){
-            //if we are already in START mode, do nothing else pass in parse mode
-            if(state != START)
-                state = START_PARSE;
-
         }
         //----------------------------------------------------------------------------
 
         //--------- writing data -----------------------------------------------------
         //if in start, saving values in map
-        if (state == START) {
-            //search for an existing id
-            //save the iterator of the search
-            id = getId(msg);
-            auto iterator = messages.find(id);
-
-            //if there, increment counter and update mean
-            //else, create new entry for key = ID
-            if (iterator == messages.end()) {
-                //create new struct for the current id
-                auto *v = new values;
-                v->nMsg = 1;
-                v->mean_time = ms;
-                v->last_time = ms;
-                messages.insert(pair<string, values *>(id, v));
-
-            } else {
-                iterator->second->nMsg++;//update numbers of message with that id
-                //update last_time with the last one read
-                iterator->second->last_time = ms;
-                //update mean
-                double mean = iterator->second->mean_time;
-                mean = (mean + ms) / iterator->second->nMsg;
-                iterator->second->mean_time = mean;
-            }
-
+        if (state == RUN) {
+            //parse and save the message in the run file
+            runFile << parseId(msg) << "#" << parsePayload(msg) << endl;
             //finish if START
-        } else if(state == START_PARSE){
-            //parse the message and put it in the log file
-            writeParse << parseId(msg) << "#" << parsePayload(msg) << endl;
+        } else if (state == IDLE){
+            //parse and save the message in the idle file
+            idleFile << parseId(msg) << "#" << parsePayload(msg) << endl;
         }
 
         //end while
     }
 
-    if(state == START){
-        //if we are still in START mode, export the data recorder in any case
-        createCSV(messages, file_name);
-    }
-
     //close files
+    idleFile.close();
+    runFile.close();
     readLog.close();
-    writeParse.close();
+
+    //create statistics file
+    createCSV(messages, file_name+"_stats.log");
 
     delete path;
     delete id;
@@ -390,20 +388,17 @@ char * getPayload(const char *line){
 
 int createCSV(auto &messages, const string& file_name){
     fstream csv;
-    string path;
-    path.append(file_name);
-    path.append("_");
-    path.append(to_string(counter_csv_files));
-    counter_csv_files++;//update che number of csv files created
-    csv.open(path+".csv", ios::out);
+    csv.open(file_name, ios::out);
 
     if(csv.fail()){
         cout << "Error creating csv file" << endl;
         return 1;
     }
 
+    double mean;
     for (const auto &message: messages) {
-        csv << message.first << "," << message.second->nMsg << "," << message.second->mean_time << "\n";
+        mean = message.second->total_time/message.second->nMsg;
+        csv << message.first << "," << message.second->nMsg << "," << mean << "\n";
     }
 
     csv.close();
