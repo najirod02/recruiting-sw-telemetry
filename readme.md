@@ -103,7 +103,7 @@ this is a nonvalid payload as the number of chars is not even.
 
 For each message ID, compute the statistics of the elapsed time beween messages of the same ID.
 
-Compute the mean time (in milliseconds) between each message. Note that message frequencies are different for each ID. Each time the FSM transitions to Stop, your script must save a [CSV](https://it.wikipedia.org/wiki/Comma-separated_values) containing the computed values (in number):
+Compute the mean time (in milliseconds) between each message. Note that message frequencies are different for each ID. Each time the FSM transitions to Stop, your script must save a [CSV](https://it.wikipedia.org/wiki/Comma-separated_values) containing the computed Values (in number):
 
 |ID|number_of_messages|mean_time|
 |-:|-:|-:|

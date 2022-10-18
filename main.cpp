@@ -27,24 +27,23 @@ const int MAX_SIZE_ID = 3;
 const int MAX_SIZE_PAYLOAD = 16;
 
 //const for buffers size
-const int MAX_WRITE_MSG_SIZE = 200;
 const int MAX_PATH_SIZE= 500;
+
+//counter of number of file
+static int counter_files = 0;
 
 //these are the possible states
 enum STATUS{IDLE, RUN};
 
-//counter for run files
-int counter_run_files = 0;
-
 /**
  * find the absolute path of a file
- * @param file the file with a relative ppath
+ * @param file the file with a relative path
  * @return a string of the absolute path of the file
  */
 char * getAbsolutePath(const char *file);
 
 /**
- * create a unique string to use it as name for a file using date and time system
+ * create a unique string to use it as a name for a file using date and time system
  * @return the string created
  */
 char * createNameFile();
@@ -66,7 +65,7 @@ bool check_stop_message(string line);
 /**
  * parse the id message from exa base to deca base
  * @param line the message read
- * @return the deca value of the message in 12bit, -1 if some errors occur (eg. not even payload chars)
+ * @return the deca value of the message, -1 if some errors occur
  */
 int16_t parseId(const char * line);
 
@@ -79,38 +78,44 @@ short * parsePayload(const char * line);
 
 /**
  * get the substring id from the message
- * @param line the message red
+ * @param line the message read
  * @return the id
  */
 char * getId(const char * line);
 
 /**
  * get the substring payload from the message
- * @param line the message red
+ * @param line the message read
  * @return the payload
  */
 char * getPayload(const char * line);
 
 /**
  * convert the exa string to decimal base value
- * @param hexVal the string
- * @return the decimal value
+ * @param hexVal the string to be parsed
+ * @return the decimal value, -1 if is not possible to parse it
  */
 int hexadecimalToDecimal(const char * hexVal);
 
 /**
- * create a csv file and save it in bin folder with name file_name
+ * create a csv file using the values contained in the map
  * @param messages the map containing the values
  * @param file_name the name to give to the file
- * @return return 1 if some errors occurs
+ * @return return -1 if some errors occurs
  */
 int createCSV(auto &messages, const string& file_name);
 
 /**
- * file log which saves every data with millis is located in
+ * file log which saves every data with millis, located in
  * \bin\
  *
- * file csv which saves the data from start sessions is located in
+ * file idle.log saves every data that are in an idle state, located in
+ * \bin\
+ *
+ * file run.log saves every data that are in a run state, located in
+ * \bin\
+ *
+ * file csv which saves the data from the log sessions doing some stats, located in
  * \bin\
  *
  * the file used for starting the start interface is candump.log
@@ -118,187 +123,113 @@ int createCSV(auto &messages, const string& file_name);
 
 int main() {
 
+    string file_name = createNameFile();//name to give to the files
+
     //------------------ opening CAN interface --------------------------------------
     char * path = getAbsolutePath("candump.log");
 
     if(open_can(path) == -1){
         //error in opening CAN interface
         cout << "Error opening CAN interface";
+        close_can();
         return 1;
     }
+
     delete path;
+    //-------------------------------------------------------------------------------
 
-    //log file for CAN interface
-    string file_name = createNameFile();
-    fstream logCAN;
-    logCAN.open(file_name + ".log", ios::out);
 
-    if (logCAN.fail()) {
-        //error opening log file
-        cout << "Error creating output log file for writing";
-        return 1;
-    }
-
-    //reading messages
-    char writeMs[MAX_WRITE_MSG_SIZE];//the message to be copied in the file
-    char message[MAX_CAN_MESSAGE_SIZE];//the message read
-
-    //variable to count the time between every message
-    auto t1 = high_resolution_clock::now();
-
-    //reading can interface
-    while(can_receive(message) != -1){//error or EOF
-        auto t2 = high_resolution_clock::now();//time after the message
-        //write on log file the millis and the message received
-        duration<double, std::milli> ms_double = (t2 - t1);//to get value, ms_double.count()
-
-        strcpy(writeMs, to_string(ms_double.count()).c_str());
-        strcat(writeMs, " ");
-        strcat(writeMs, message);
-        logCAN << writeMs << endl;
-    }
-
-    //closing CAN interface and log file
-    logCAN.close();
-    close_can();
-
-    //-------- finish reading can interface -----------------------------------------
-
-    //the program start at IDLE state
-    STATUS state = IDLE;
-
-    //reading the log file and do stats
-    fstream readLog;
-    readLog.open(file_name+".log", ios::in);
-
-    if(readLog.fail()){
-        //error opening the log file
-        cout << "Error opening the log file for reading" << endl;
-        return 1;
-    }
-
-    //writing data on the files
-    fstream idleFile, runFile;
-
-    idleFile.open(file_name+"_idle.log", ios::out);
-    if(idleFile.fail()){
-        //error opening the parse log file
-        cout << "Error opening the idle file" << endl;
-        return 1;
-    }
+    //------------------ opening RUN file --------------------------------------
+    fstream runFile;
 
     //struct to contain values about a message
     typedef struct{
         int nMsg;//number of times of the msg
         double total_time;
-    } values;
+    } Values;
 
     //map containing stats about the id message
-    map <string, values *> messages;
+    map <string, Values *> messages;
 
-    double ms;//read millis from file
-    char msg[MAX_WRITE_MSG_SIZE];
-    char * id, * payload;
-    short * payloadParse;
+    //the program start at IDLE state
+    STATUS state = IDLE;
 
-    while(!readLog.eof()){
-        //read per line millis and msg
-        readLog >> ms >> msg;
+    //variable to get data from can interface
+    char message[MAX_CAN_MESSAGE_SIZE];//the message read
+    double ms;
+    char *id;
+    auto t1 = high_resolution_clock::now();
 
-        //update the map with the message read -----------------------------
-        id = getId(msg);
-        payload = getPayload(msg);
+    //------------------ reading data from CAN interface --------------------------------------
+    while(can_receive(message) != -1){//error or EOF
+        auto t2 = high_resolution_clock::now();//time after the message
 
-        auto iterator = messages.find(id);
-        //if there, increment counter and update mean
-        //else, create new entry for key = ID
-        if (iterator == messages.end()) {
-            //create new struct for the current id
-            auto *v = new values;
-            v->nMsg = 1;
-            v->total_time = ms;
-            messages.insert(pair<string, values *>(id, v));
+        //get data to write
+        duration<double, std::milli> ms_double = (t2 - t1);
+        id = getId(message);
+        ms = ms_double.count();
 
-        } else {
-            iterator->second->nMsg++;//update numbers of message with that id
-            //update the total time
-            iterator->second->total_time += ms;
-        }
-        //--------------------------------------------------------------------------------
-
-        //-------------------- mod the status if needed -----------------------------------
-        //check if the message is a start or a stop message
-        if (check_start_message(msg)) {
+        //-------------------- modify the status if needed -----------------------------------
+        if (check_start_message(message)) {//check if the message is a start or a stop message
             //change from IDLE to RUN if not already in RUN (if so, then do nothing)
-            if (state == IDLE) {
+            if (state == IDLE){
                 state = RUN;
+                counter_files++;
+
                 //create new start file
-                counter_run_files++;
-                runFile.open(file_name + "_run_" + to_string(counter_run_files) + ".log", ios::out);
+                runFile.open(file_name + "-" + to_string(counter_files) + ".txt", ios::out);
 
                 if(runFile.fail()){
                     //error opening the parse log file
-                    cout << "Error opening the run file n." << counter_run_files << endl;
+                    cout << "Error opening the run file .txt n." << counter_files << endl;
+                    runFile.close();
+                    close_can();
                     return 1;
                 }
-
             }
 
-        } else if (check_stop_message(msg)) {
-            if(state == RUN) {
-                //close run file
-                runFile.close();
-            }
-            //change from START to IDLE
+        } else if (check_stop_message(message)) {
             state = IDLE;
-            //end START status
+            runFile.close();
+            //create statistics file for the ended run state
+            createCSV(messages, file_name + "-" + to_string(counter_files) + ".csv");
         }
-        //----------------------------------------------------------------------------
+        //------------------------------------------------------------------------------------
 
-        //--------- writing data -----------------------------------------------------
-        //if in start, saving values in map
-        if (state == RUN) {
-            //parse and save the message in the run file
-            runFile << parseId(msg) << "#";
+        //writing on run file if in run state
+        if(state == RUN) {
 
-            //write every result from parsePayload giving a space for each byte
-            payloadParse = parsePayload(msg);
-
-            for(int i=0; i< strlen(payload)/2 && payloadParse != nullptr; i++){
-                runFile << payloadParse[i] << "-";
+            //----- update map values ----------------------------------------------
+            auto iterator = messages.find(id);
+            //if there, increment counter and update mean
+            //else, create new entry for key = ID
+            if (iterator == messages.end()) {
+                //create new struct for the current id
+                auto *v = new Values;
+                v->nMsg = 1;
+                v->total_time = ms;
+                messages.insert(pair<string, Values *>(id, v));
+            } else {
+                iterator->second->nMsg++;//update numbers of message with that id
+                iterator->second->total_time += ms;//update the total time
             }
+            //----------------------------------------------------------------------
 
-            runFile << endl;
-            delete payloadParse;
-
-            //finish if START
-        } else if (state == IDLE){
-            //parse and save the message in the idle file
-            idleFile << parseId(msg) << "#";
-
-            //write every result from parsePayload giving a space for each byte
-            payloadParse = parsePayload(msg);
-
-            for(int i=0; i<strlen(payload)/2 && payloadParse != nullptr; i++){
-                idleFile << payloadParse[i] << "-";
-            }
-
-            idleFile << endl;
-            delete payloadParse;
+            runFile << ms << " " << message << endl;
         }
 
         delete id;
-        delete payload;
         //end while
     }
+    //-------- stop reading CAN interface -----------------------------------------
 
-    //close files
-    idleFile.close();
+    //closing CAN interface and txt file
+    close_can();
     runFile.close();
-    readLog.close();
 
-    //create statistics file
-    createCSV(messages, file_name+"_stats.log");
+    //if there are some values in the map, write them
+    if(!messages.empty())
+        createCSV(messages, file_name + " " + to_string(counter_files) + ".csv");
 
     return 0;
 }
@@ -335,22 +266,21 @@ int16_t parseId(const char * line){
     return -1;
 }
 
-
 short * parsePayload(const char * line){
     char * payload = getPayload(line);
     int size = strlen(payload);
     char buffer[3];//buffer to contain the two characters to parse
-    short * results;//vector to contain the parsed pairs
+    short * results;//array pointer to contain the parsed pairs
 
-    //check if we have an even pair of characters
+    //check if we have an even pair of characters and the payload size is less or equal to the max size
     if(size<=MAX_SIZE_PAYLOAD && size%2==0){
         //everything ok
         results = new short[(size/2)];
-        for(int i=0, j=0; i<size; i++, j++){
+        for(int i=0, j=0; i<size; i+=2, j++){
+            //copy the 2 chars in the buffer to parse them
             buffer[0] = payload[i];
             buffer[1] = payload[i+1];
             buffer[2] = '\0';
-            i++;
             results[j] = hexadecimalToDecimal(buffer);
         }
 
@@ -372,10 +302,12 @@ int hexadecimalToDecimal(const char * hexVal){
 
             base = base * 16;
         }
-
         else if (hexVal[i] >= 'A' && hexVal[i] <= 'F') {
             dec_val += (int(hexVal[i]) - 55) * base;
             base = base * 16;
+        } else{
+            //error, the string has some non hexa values
+            return -1;
         }
     }
     return dec_val;
@@ -422,9 +354,12 @@ int createCSV(auto &messages, const string& file_name){
     }
 
     double mean;
-    for (const auto &message: messages) {
+    for (const auto &message : messages) {
         mean = message.second->total_time/message.second->nMsg;
-        csv << message.first << "," << message.second->nMsg << "," << mean << "\n";
+        csv << message.first << "," << message.second->nMsg << "," << mean << endl;
+
+        //remove struct pointer
+        delete message.second;
     }
 
     csv.close();
