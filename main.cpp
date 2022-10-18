@@ -18,9 +18,9 @@ extern "C"{
 }
 
 //const for starting end ending sessions
-const string START_1 = "0A0#6601";
-const string START_2 = "0A0#FF01";
-const string STOP_1 = "0A0#66FF";
+const char *const START_1 = "0A0#6601";
+const char *const START_2 = "0A0#FF01";
+const char *const STOP_1 = "0A0#66FF";
 
 //const for id and payload size
 const int MAX_SIZE_ID = 3;
@@ -53,14 +53,14 @@ char * createNameFile();
  * @param line the line read
  * @return true if is a start message, false otherwise
  */
-bool check_start_message(string line);
+bool check_start_message(const char * line);
 
 /**
  * check if the message read is a stop message
  * @param line the line read
  * @return true if is a stop message, false otherwise
  */
-bool check_stop_message(string line);
+bool check_stop_message(const char * line);
 
 /**
  * parse the id message from exa base to deca base
@@ -138,9 +138,7 @@ int main() {
     delete path;
     //-------------------------------------------------------------------------------
 
-
-    //------------------ opening RUN file --------------------------------------
-    fstream runFile;
+    fstream runFile;//stream to write every run sessions
 
     //struct to contain values about a message
     typedef struct{
@@ -154,7 +152,7 @@ int main() {
     //the program start at IDLE state
     STATUS state = IDLE;
 
-    //variable to get data from can interface
+    //variables to get data from CAN interface
     char message[MAX_CAN_MESSAGE_SIZE];//the message read
     double ms;
     char *id;
@@ -162,24 +160,25 @@ int main() {
 
     //------------------ reading data from CAN interface --------------------------------------
     while(can_receive(message) != -1){//error or EOF
-        auto t2 = high_resolution_clock::now();//time after the message
+        auto t2 = high_resolution_clock::now();//elapsed time from the start of reading
 
         //get data to write
         duration<double, std::milli> ms_double = (t2 - t1);
-        id = getId(message);
         ms = ms_double.count();
+        id = getId(message);
 
         //-------------------- modify the status if needed -----------------------------------
-        if (check_start_message(message)) {//check if the message is a start or a stop message
+        //check if the message is a start or a stop message
+        if (check_start_message(message)) {//start message
             //change from IDLE to RUN if not already in RUN (if so, then do nothing)
-            if (state == IDLE){
+            if (state == IDLE) {
                 state = RUN;
                 counter_files++;
 
                 //create new start file
                 runFile.open(file_name + "-" + to_string(counter_files) + ".txt", ios::out);
 
-                if(runFile.fail()){
+                if (runFile.fail()) {
                     //error opening the parse log file
                     cout << "Error opening the run file .txt n." << counter_files << endl;
                     runFile.close();
@@ -187,8 +186,9 @@ int main() {
                     return 1;
                 }
             }
+        }
 
-        } else if (check_stop_message(message)) {
+        if (check_stop_message(message)) {//stop message
             state = IDLE;
             runFile.close();
             //create statistics file for the ended run state
@@ -196,8 +196,14 @@ int main() {
         }
         //------------------------------------------------------------------------------------
 
+
+        //--------- writing data ---------------------------------------------------------
         //writing on run file if in run state
         if(state == RUN) {
+            //parse message -------------------------------------------
+            parseId(message);
+            parsePayload(message);
+            //---------------------------------------------------------
 
             //----- update map values ----------------------------------------------
             auto iterator = messages.find(id);
@@ -215,6 +221,7 @@ int main() {
             }
             //----------------------------------------------------------------------
 
+            //write on file
             runFile << ms << " " << message << endl;
         }
 
@@ -228,6 +235,7 @@ int main() {
     runFile.close();
 
     //if there are some values in the map, write them
+    //it means that no stop message was read but the data must be wrote
     if(!messages.empty())
         createCSV(messages, file_name + " " + to_string(counter_files) + ".csv");
 
@@ -245,12 +253,12 @@ char * createNameFile(){
     return buffer;
 }
 
-bool check_start_message(string line){
-    return (line == START_1 || line == START_2);
+bool check_start_message(const char *line){
+    return (strcmp(line, START_1) == 0 || strcmp(line, START_2) == 0);
 }
 
-bool check_stop_message(string line){
-    return (line == STOP_1);
+bool check_stop_message(const char *line){
+    return (strcmp(line, STOP_1) == 0);
 }
 
 int16_t parseId(const char * line){
