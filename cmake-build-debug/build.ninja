@@ -11,7 +11,7 @@
 # =============================================================================
 
 # =============================================================================
-# Project: Project2
+# Project: Telemetry
 # Configurations: Debug
 # =============================================================================
 
@@ -41,115 +41,40 @@ include CMakeFiles/rules.ninja
 
 cmake_ninja_workdir = C$:/Users/dorij/OneDrive/Desktop/eagletrt/recruiting-sw-telemetry/cmake-build-debug/
 # =============================================================================
-# Object build statements for SHARED_LIBRARY target Project2
+# Object build statements for SHARED_LIBRARY target Telemetry
 
 
 #############################################
-# Order-only phony target for Project2
+# Order-only phony target for Telemetry
 
-build cmake_object_order_depends_target_Project2: phony || CMakeFiles/Project2.dir
+build cmake_object_order_depends_target_Telemetry: phony || CMakeFiles/Telemetry.dir
 
-build CMakeFiles/Project2.dir/fake_receiver.c.obj: C_COMPILER__Project2_Debug C$:/Users/dorij/OneDrive/Desktop/eagletrt/recruiting-sw-telemetry/fake_receiver.c || cmake_object_order_depends_target_Project2
-  DEFINES = -DProject2_EXPORTS
-  DEP_FILE = CMakeFiles\Project2.dir\fake_receiver.c.obj.d
+build CMakeFiles/Telemetry.dir/fake_receiver.c.obj: C_COMPILER__Telemetry_Debug C$:/Users/dorij/OneDrive/Desktop/eagletrt/recruiting-sw-telemetry/fake_receiver.c || cmake_object_order_depends_target_Telemetry
+  DEFINES = -DTelemetry_EXPORTS
+  DEP_FILE = CMakeFiles\Telemetry.dir\fake_receiver.c.obj.d
   FLAGS = -g
   INCLUDES = -IC:/Users/dorij/OneDrive/Desktop/eagletrt/recruiting-sw-telemetry
-  OBJECT_DIR = CMakeFiles\Project2.dir
-  OBJECT_FILE_DIR = CMakeFiles\Project2.dir
+  OBJECT_DIR = CMakeFiles\Telemetry.dir
+  OBJECT_FILE_DIR = CMakeFiles\Telemetry.dir
 
 
 # =============================================================================
-# Link build statements for SHARED_LIBRARY target Project2
+# Link build statements for SHARED_LIBRARY target Telemetry
 
 
 #############################################
-# Link the shared library libProject2.dll
+# Link the shared library libTelemetry.dll
 
-build libProject2.dll libProject2.dll.a: C_SHARED_LIBRARY_LINKER__Project2_Debug CMakeFiles/Project2.dir/fake_receiver.c.obj
+build libTelemetry.dll libTelemetry.dll.a: C_SHARED_LIBRARY_LINKER__Telemetry_Debug CMakeFiles/Telemetry.dir/fake_receiver.c.obj
   LANGUAGE_COMPILE_FLAGS = -g
   LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
-  OBJECT_DIR = CMakeFiles\Project2.dir
+  OBJECT_DIR = CMakeFiles\Telemetry.dir
   POST_BUILD = cd .
   PRE_LINK = cd .
   RESTAT = 1
-  TARGET_FILE = libProject2.dll
-  TARGET_IMPLIB = libProject2.dll.a
-  TARGET_PDB = Project2.dll.dbg
-
-# =============================================================================
-# Object build statements for EXECUTABLE target project_2
-
-
-#############################################
-# Order-only phony target for project_2
-
-build cmake_object_order_depends_target_project_2: phony || cmake_object_order_depends_target_Project2
-
-build CMakeFiles/project_2.dir/main.cpp.obj: CXX_COMPILER__project_2_Debug C$:/Users/dorij/OneDrive/Desktop/eagletrt/recruiting-sw-telemetry/main.cpp || cmake_object_order_depends_target_project_2
-  DEP_FILE = CMakeFiles\project_2.dir\main.cpp.obj.d
-  FLAGS = -pthread -O0 -g -w -g -std=c++20
-  INCLUDES = -IC:/Users/dorij/OneDrive/Desktop/eagletrt/recruiting-sw-telemetry
-  OBJECT_DIR = CMakeFiles\project_2.dir
-  OBJECT_FILE_DIR = CMakeFiles\project_2.dir
-
-
-# =============================================================================
-# Link build statements for EXECUTABLE target project_2
-
-
-#############################################
-# Link the executable ..\bin\project_2.exe
-
-build ../bin/project_2.exe: CXX_EXECUTABLE_LINKER__project_2_Debug CMakeFiles/project_2.dir/main.cpp.obj | libProject2.dll.a || libProject2.dll
-  FLAGS = -pthread -O0 -g -w -g
-  LINK_LIBRARIES = libProject2.dll.a  -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
-  OBJECT_DIR = CMakeFiles\project_2.dir
-  POST_BUILD = cd .
-  PRE_LINK = cd .
-  TARGET_FILE = ..\bin\project_2.exe
-  TARGET_IMPLIB = libproject_2.dll.a
-  TARGET_PDB = project_2.exe.dbg
-
-# =============================================================================
-# Object build statements for EXECUTABLE target project_2.2
-
-
-#############################################
-# Order-only phony target for project_2.2
-
-build cmake_object_order_depends_target_project_2.2: phony || CMakeFiles/project_2.2.dir
-
-build CMakeFiles/project_2.2.dir/main.cpp.obj: CXX_COMPILER__project_2.2e2_Debug C$:/Users/dorij/OneDrive/Desktop/eagletrt/recruiting-sw-telemetry/main.cpp || cmake_object_order_depends_target_project_2.2
-  DEP_FILE = CMakeFiles\project_2.2.dir\main.cpp.obj.d
-  FLAGS = -pthread -O0 -g -w -g -std=c++20
-  INCLUDES = -IC:/Users/dorij/OneDrive/Desktop/eagletrt/recruiting-sw-telemetry
-  OBJECT_DIR = CMakeFiles\project_2.2.dir
-  OBJECT_FILE_DIR = CMakeFiles\project_2.2.dir
-
-build CMakeFiles/project_2.2.dir/fake_receiver.c.obj: C_COMPILER__project_2.2e2_Debug C$:/Users/dorij/OneDrive/Desktop/eagletrt/recruiting-sw-telemetry/fake_receiver.c || cmake_object_order_depends_target_project_2.2
-  DEP_FILE = CMakeFiles\project_2.2.dir\fake_receiver.c.obj.d
-  FLAGS = -g
-  INCLUDES = -IC:/Users/dorij/OneDrive/Desktop/eagletrt/recruiting-sw-telemetry
-  OBJECT_DIR = CMakeFiles\project_2.2.dir
-  OBJECT_FILE_DIR = CMakeFiles\project_2.2.dir
-
-
-# =============================================================================
-# Link build statements for EXECUTABLE target project_2.2
-
-
-#############################################
-# Link the executable ..\bin\project_2.2.exe
-
-build ../bin/project_2.2.exe: CXX_EXECUTABLE_LINKER__project_2.2e2_Debug CMakeFiles/project_2.2.dir/main.cpp.obj CMakeFiles/project_2.2.dir/fake_receiver.c.obj
-  FLAGS = -pthread -O0 -g -w -g
-  LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
-  OBJECT_DIR = CMakeFiles\project_2.2.dir
-  POST_BUILD = cd .
-  PRE_LINK = cd .
-  TARGET_FILE = ..\bin\project_2.2.exe
-  TARGET_IMPLIB = libproject_2.2.dll.a
-  TARGET_PDB = project_2.2.exe.dbg
+  TARGET_FILE = libTelemetry.dll
+  TARGET_IMPLIB = libTelemetry.dll.a
+  TARGET_PDB = Telemetry.dll.dbg
 
 # =============================================================================
 # Object build statements for EXECUTABLE target telemetry
@@ -192,38 +117,6 @@ build ../bin/telemetry.exe: CXX_EXECUTABLE_LINKER__telemetry_Debug CMakeFiles/te
   TARGET_IMPLIB = libtelemetry.dll.a
   TARGET_PDB = telemetry.exe.dbg
 
-# =============================================================================
-# Object build statements for STATIC_LIBRARY target project_library
-
-
-#############################################
-# Order-only phony target for project_library
-
-build cmake_object_order_depends_target_project_library: phony || CMakeFiles/project_library.dir
-
-build CMakeFiles/project_library.dir/fake_receiver.c.obj: C_COMPILER__project_library_Debug C$:/Users/dorij/OneDrive/Desktop/eagletrt/recruiting-sw-telemetry/fake_receiver.c || cmake_object_order_depends_target_project_library
-  DEP_FILE = CMakeFiles\project_library.dir\fake_receiver.c.obj.d
-  FLAGS = -g
-  INCLUDES = -IC:/Users/dorij/OneDrive/Desktop/eagletrt/recruiting-sw-telemetry
-  OBJECT_DIR = CMakeFiles\project_library.dir
-  OBJECT_FILE_DIR = CMakeFiles\project_library.dir
-
-
-# =============================================================================
-# Link build statements for STATIC_LIBRARY target project_library
-
-
-#############################################
-# Link the static library libproject_library.a
-
-build libproject_library.a: C_STATIC_LIBRARY_LINKER__project_library_Debug CMakeFiles/project_library.dir/fake_receiver.c.obj
-  LANGUAGE_COMPILE_FLAGS = -g
-  OBJECT_DIR = CMakeFiles\project_library.dir
-  POST_BUILD = cd .
-  PRE_LINK = cd .
-  TARGET_FILE = libproject_library.a
-  TARGET_PDB = project_library.a.dbg
-
 
 #############################################
 # Utility command for edit_cache
@@ -250,17 +143,7 @@ build rebuild_cache: phony CMakeFiles/rebuild_cache.util
 # =============================================================================
 # Target aliases.
 
-build Project2: phony libProject2.dll
-
-build project_2: phony ../bin/project_2.exe
-
-build project_2.2: phony ../bin/project_2.2.exe
-
-build project_2.2.exe: phony ../bin/project_2.2.exe
-
-build project_2.exe: phony ../bin/project_2.exe
-
-build project_library: phony libproject_library.a
+build Telemetry: phony libTelemetry.dll
 
 build telemetry: phony ../bin/telemetry.exe
 
@@ -274,7 +157,7 @@ build telemetry.exe: phony ../bin/telemetry.exe
 #############################################
 # Folder: C:/Users/dorij/OneDrive/Desktop/eagletrt/recruiting-sw-telemetry/cmake-build-debug
 
-build all: phony libProject2.dll ../bin/project_2.exe ../bin/project_2.2.exe ../bin/telemetry.exe libproject_library.a
+build all: phony libTelemetry.dll ../bin/telemetry.exe
 
 # =============================================================================
 # Built-in targets

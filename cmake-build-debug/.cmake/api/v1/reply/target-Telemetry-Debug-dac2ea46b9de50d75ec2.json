@@ -1,9 +1,14 @@
 {
-	"archive" : {},
 	"artifacts" : 
 	[
 		{
-			"path" : "libproject_library.a"
+			"path" : "libTelemetry.dll"
+		},
+		{
+			"path" : "libTelemetry.dll.a"
+		},
+		{
+			"path" : "libTelemetry.pdb"
 		}
 	],
 	"backtrace" : 1,
@@ -26,7 +31,7 @@
 			{
 				"command" : 0,
 				"file" : 0,
-				"line" : 32,
+				"line" : 14,
 				"parent" : 0
 			},
 			{
@@ -46,6 +51,12 @@
 					"fragment" : "-g"
 				}
 			],
+			"defines" : 
+			[
+				{
+					"define" : "Telemetry_EXPORTS"
+				}
+			],
 			"includes" : 
 			[
 				{
@@ -60,9 +71,24 @@
 			]
 		}
 	],
-	"id" : "project_library::@6890427a1f51a3e7e1df",
-	"name" : "project_library",
-	"nameOnDisk" : "libproject_library.a",
+	"id" : "Telemetry::@6890427a1f51a3e7e1df",
+	"link" : 
+	{
+		"commandFragments" : 
+		[
+			{
+				"fragment" : "",
+				"role" : "flags"
+			},
+			{
+				"fragment" : "-lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32",
+				"role" : "libraries"
+			}
+		],
+		"language" : "C"
+	},
+	"name" : "Telemetry",
+	"nameOnDisk" : "libTelemetry.dll",
 	"paths" : 
 	{
 		"build" : ".",
@@ -87,5 +113,5 @@
 			"sourceGroupIndex" : 0
 		}
 	],
-	"type" : "STATIC_LIBRARY"
+	"type" : "SHARED_LIBRARY"
 }

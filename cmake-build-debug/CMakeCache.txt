@@ -151,7 +151,7 @@ CMAKE_PROJECT_DESCRIPTION:STATIC=
 CMAKE_PROJECT_HOMEPAGE_URL:STATIC=
 
 //Value Computed by CMake
-CMAKE_PROJECT_NAME:STATIC=Project2
+CMAKE_PROJECT_NAME:STATIC=Telemetry
 
 //Value Computed by CMake
 CMAKE_PROJECT_VERSION:STATIC=1.0
@@ -256,6 +256,42 @@ Project2_IS_TOP_LEVEL:STATIC=ON
 
 //Value Computed by CMake
 Project2_SOURCE_DIR:STATIC=C:/Users/dorij/OneDrive/Desktop/eagletrt/recruiting-sw-telemetry
+
+//Value Computed by CMake
+Project_BINARY_DIR:STATIC=C:/Users/dorij/OneDrive/Desktop/eagletrt/recruiting-sw-telemetry/cmake-build-debug
+
+//Value Computed by CMake
+Project_IS_TOP_LEVEL:STATIC=ON
+
+//Value Computed by CMake
+Project_SOURCE_DIR:STATIC=C:/Users/dorij/OneDrive/Desktop/eagletrt/recruiting-sw-telemetry
+
+//Value Computed by CMake
+Telemetry_BINARY_DIR:STATIC=C:/Users/dorij/OneDrive/Desktop/eagletrt/recruiting-sw-telemetry/cmake-build-debug
+
+//Value Computed by CMake
+Telemetry_IS_TOP_LEVEL:STATIC=ON
+
+//Value Computed by CMake
+Telemetry_SOURCE_DIR:STATIC=C:/Users/dorij/OneDrive/Desktop/eagletrt/recruiting-sw-telemetry
+
+//Value Computed by CMake
+telemetry_BINARY_DIR:STATIC=C:/Users/dorij/OneDrive/Desktop/eagletrt/recruiting-sw-telemetry/cmake-build-debug
+
+//Value Computed by CMake
+telemetry_IS_TOP_LEVEL:STATIC=ON
+
+//Value Computed by CMake
+telemetry_SOURCE_DIR:STATIC=C:/Users/dorij/OneDrive/Desktop/eagletrt/recruiting-sw-telemetry
+
+//Value Computed by CMake
+zelemetry_BINARY_DIR:STATIC=C:/Users/dorij/OneDrive/Desktop/eagletrt/recruiting-sw-telemetry/cmake-build-debug
+
+//Value Computed by CMake
+zelemetry_IS_TOP_LEVEL:STATIC=ON
+
+//Value Computed by CMake
+zelemetry_SOURCE_DIR:STATIC=C:/Users/dorij/OneDrive/Desktop/eagletrt/recruiting-sw-telemetry
 
 
 ########################

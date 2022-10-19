@@ -16,10 +16,7 @@
 					"targetIndexes" : 
 					[
 						0,
-						1,
-						2,
-						3,
-						4
+						1
 					]
 				}
 			],
@@ -31,14 +28,11 @@
 					[
 						0
 					],
-					"name" : "Project2",
+					"name" : "Telemetry",
 					"targetIndexes" : 
 					[
 						0,
-						1,
-						2,
-						3,
-						4
+						1
 					]
 				}
 			],
@@ -46,36 +40,15 @@
 			[
 				{
 					"directoryIndex" : 0,
-					"id" : "Project2::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-Project2-Debug-ded181fe1b0b5b95196b.json",
-					"name" : "Project2",
-					"projectIndex" : 0
-				},
-				{
-					"directoryIndex" : 0,
-					"id" : "project_2::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-project_2-Debug-96526a811cbb2625bdaf.json",
-					"name" : "project_2",
-					"projectIndex" : 0
-				},
-				{
-					"directoryIndex" : 0,
-					"id" : "project_2.2::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-project_2.2-Debug-f47228de04457320331c.json",
-					"name" : "project_2.2",
-					"projectIndex" : 0
-				},
-				{
-					"directoryIndex" : 0,
-					"id" : "project_library::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-project_library-Debug-1c9bf361783b4fee2d41.json",
-					"name" : "project_library",
+					"id" : "Telemetry::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-Telemetry-Debug-dac2ea46b9de50d75ec2.json",
+					"name" : "Telemetry",
 					"projectIndex" : 0
 				},
 				{
 					"directoryIndex" : 0,
 					"id" : "telemetry::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-telemetry-Debug-5f67a9175c212f693a2e.json",
+					"jsonFile" : "target-telemetry-Debug-c251115e33ad3896edee.json",
 					"name" : "telemetry",
 					"projectIndex" : 0
 				}

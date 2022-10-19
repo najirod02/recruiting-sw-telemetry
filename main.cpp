@@ -106,16 +106,10 @@ int hexadecimalToDecimal(const char * hexVal);
 int createCSV(auto &messages, const string& file_name);
 
 /**
- * file log which saves every data with millis, located in
+ * file run.txt saves every data that are in a run state, located in
  * \bin\
  *
- * file idle.log saves every data that are in an idle state, located in
- * \bin\
- *
- * file run.log saves every data that are in a run state, located in
- * \bin\
- *
- * file csv which saves the data from the log sessions doing some stats, located in
+ * file csv which saves the data from the run sessions doing some stats, located in
  * \bin\
  *
  * the file used for starting the start interface is candump.log
@@ -156,16 +150,10 @@ int main() {
     char message[MAX_CAN_MESSAGE_SIZE];//the message read
     double ms;
     char *id;
-    auto t1 = high_resolution_clock::now();
+    chrono::time_point<std::chrono::system_clock> t1;//start time when reading messages in run mode
 
     //------------------ reading data from CAN interface --------------------------------------
     while(can_receive(message) != -1){//error or EOF
-        auto t2 = high_resolution_clock::now();//elapsed time from the start of reading
-
-        //get data to write
-        duration<double, std::milli> ms_double = (t2 - t1);
-        ms = ms_double.count();
-        id = getId(message);
 
         //-------------------- modify the status if needed -----------------------------------
         //check if the message is a start or a stop message
@@ -177,6 +165,8 @@ int main() {
 
                 //create new start file
                 runFile.open(file_name + "-" + to_string(counter_files) + ".txt", ios::out);
+
+                t1 = high_resolution_clock::now();//new start time of run mode
 
                 if (runFile.fail()) {
                     //error opening the parse log file
@@ -200,6 +190,12 @@ int main() {
         //--------- writing data ---------------------------------------------------------
         //writing on run file if in run state
         if(state == RUN) {
+            //get data to write
+            auto t2 = high_resolution_clock::now();//elapsed time from the start of reading
+            duration<double, std::milli> ms_double = (t2 - t1);
+            ms = ms_double.count();
+            id = getId(message);
+
             //parse message -------------------------------------------
             parseId(message);
             parsePayload(message);
@@ -223,9 +219,10 @@ int main() {
 
             //write on file
             runFile << ms << " " << message << endl;
+
+            delete id;
         }
 
-        delete id;
         //end while
     }
     //-------- stop reading CAN interface -----------------------------------------
@@ -262,9 +259,7 @@ bool check_stop_message(const char *line){
 }
 
 int16_t parseId(const char * line){
-    //split the message in two parts, id and payload
     char * id = getId(line);
-
     int size = strlen(id);
 
     if(size<=MAX_SIZE_ID){
@@ -277,6 +272,7 @@ int16_t parseId(const char * line){
 short * parsePayload(const char * line){
     char * payload = getPayload(line);
     int size = strlen(payload);
+
     char buffer[3];//buffer to contain the two characters to parse
     short * results;//array pointer to contain the parsed pairs
 
@@ -291,7 +287,6 @@ short * parsePayload(const char * line){
             buffer[2] = '\0';
             results[j] = hexadecimalToDecimal(buffer);
         }
-
         return results;
     } else {
         //error in syntax
@@ -355,13 +350,13 @@ char * getPayload(const char *line){
 int createCSV(auto &messages, const string& file_name){
     fstream csv;
     csv.open(file_name, ios::out);
+    double mean;
 
     if(csv.fail()){
         cout << "Error creating csv file" << endl;
         return 1;
     }
 
-    double mean;
     for (const auto &message : messages) {
         mean = message.second->total_time/message.second->nMsg;
         csv << message.first << "," << message.second->nMsg << "," << mean << endl;

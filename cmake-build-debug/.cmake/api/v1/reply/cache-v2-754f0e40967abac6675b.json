@@ -851,7 +851,7 @@
 				}
 			],
 			"type" : "STATIC",
-			"value" : "Project2"
+			"value" : "Telemetry"
 		},
 		{
 			"name" : "CMAKE_PROJECT_VERSION",
@@ -1315,6 +1315,150 @@
 		},
 		{
 			"name" : "Project2_SOURCE_DIR",
+			"properties" : 
+			[
+				{
+					"name" : "HELPSTRING",
+					"value" : "Value Computed by CMake"
+				}
+			],
+			"type" : "STATIC",
+			"value" : "C:/Users/dorij/OneDrive/Desktop/eagletrt/recruiting-sw-telemetry"
+		},
+		{
+			"name" : "Project_BINARY_DIR",
+			"properties" : 
+			[
+				{
+					"name" : "HELPSTRING",
+					"value" : "Value Computed by CMake"
+				}
+			],
+			"type" : "STATIC",
+			"value" : "C:/Users/dorij/OneDrive/Desktop/eagletrt/recruiting-sw-telemetry/cmake-build-debug"
+		},
+		{
+			"name" : "Project_IS_TOP_LEVEL",
+			"properties" : 
+			[
+				{
+					"name" : "HELPSTRING",
+					"value" : "Value Computed by CMake"
+				}
+			],
+			"type" : "STATIC",
+			"value" : "ON"
+		},
+		{
+			"name" : "Project_SOURCE_DIR",
+			"properties" : 
+			[
+				{
+					"name" : "HELPSTRING",
+					"value" : "Value Computed by CMake"
+				}
+			],
+			"type" : "STATIC",
+			"value" : "C:/Users/dorij/OneDrive/Desktop/eagletrt/recruiting-sw-telemetry"
+		},
+		{
+			"name" : "Telemetry_BINARY_DIR",
+			"properties" : 
+			[
+				{
+					"name" : "HELPSTRING",
+					"value" : "Value Computed by CMake"
+				}
+			],
+			"type" : "STATIC",
+			"value" : "C:/Users/dorij/OneDrive/Desktop/eagletrt/recruiting-sw-telemetry/cmake-build-debug"
+		},
+		{
+			"name" : "Telemetry_IS_TOP_LEVEL",
+			"properties" : 
+			[
+				{
+					"name" : "HELPSTRING",
+					"value" : "Value Computed by CMake"
+				}
+			],
+			"type" : "STATIC",
+			"value" : "ON"
+		},
+		{
+			"name" : "Telemetry_SOURCE_DIR",
+			"properties" : 
+			[
+				{
+					"name" : "HELPSTRING",
+					"value" : "Value Computed by CMake"
+				}
+			],
+			"type" : "STATIC",
+			"value" : "C:/Users/dorij/OneDrive/Desktop/eagletrt/recruiting-sw-telemetry"
+		},
+		{
+			"name" : "telemetry_BINARY_DIR",
+			"properties" : 
+			[
+				{
+					"name" : "HELPSTRING",
+					"value" : "Value Computed by CMake"
+				}
+			],
+			"type" : "STATIC",
+			"value" : "C:/Users/dorij/OneDrive/Desktop/eagletrt/recruiting-sw-telemetry/cmake-build-debug"
+		},
+		{
+			"name" : "telemetry_IS_TOP_LEVEL",
+			"properties" : 
+			[
+				{
+					"name" : "HELPSTRING",
+					"value" : "Value Computed by CMake"
+				}
+			],
+			"type" : "STATIC",
+			"value" : "ON"
+		},
+		{
+			"name" : "telemetry_SOURCE_DIR",
+			"properties" : 
+			[
+				{
+					"name" : "HELPSTRING",
+					"value" : "Value Computed by CMake"
+				}
+			],
+			"type" : "STATIC",
+			"value" : "C:/Users/dorij/OneDrive/Desktop/eagletrt/recruiting-sw-telemetry"
+		},
+		{
+			"name" : "zelemetry_BINARY_DIR",
+			"properties" : 
+			[
+				{
+					"name" : "HELPSTRING",
+					"value" : "Value Computed by CMake"
+				}
+			],
+			"type" : "STATIC",
+			"value" : "C:/Users/dorij/OneDrive/Desktop/eagletrt/recruiting-sw-telemetry/cmake-build-debug"
+		},
+		{
+			"name" : "zelemetry_IS_TOP_LEVEL",
+			"properties" : 
+			[
+				{
+					"name" : "HELPSTRING",
+					"value" : "Value Computed by CMake"
+				}
+			],
+			"type" : "STATIC",
+			"value" : "ON"
+		},
+		{
+			"name" : "zelemetry_SOURCE_DIR",
 			"properties" : 
 			[
 				{
