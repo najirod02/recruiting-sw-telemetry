@@ -150,6 +150,8 @@ int main() {
     char message[MAX_CAN_MESSAGE_SIZE];//the message read
     double ms;
     char *id;
+    short parsedId;
+    short * parsedPayload;
     chrono::time_point<std::chrono::system_clock> t1;//start time when reading messages in run mode
 
     //------------------ reading data from CAN interface --------------------------------------
@@ -197,8 +199,9 @@ int main() {
             id = getId(message);
 
             //parse message -------------------------------------------
-            parseId(message);
-            parsePayload(message);
+            parsedId = parseId(message);
+            parsedPayload = parsePayload(message);
+            delete parsedPayload;
             //---------------------------------------------------------
 
             //----- update map values ----------------------------------------------
