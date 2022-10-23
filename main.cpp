@@ -190,6 +190,13 @@ int main() {
 
 
         //--------- writing data ---------------------------------------------------------
+
+        //---- parse message -------------------------------------------
+        parsedId = parseId(message);
+        parsedPayload = parsePayload(message);
+        delete parsedPayload;
+        //---------------------------------------------------------
+
         //writing on run file if in run state
         if(state == RUN) {
             //get data to write
@@ -197,12 +204,6 @@ int main() {
             duration<double, std::milli> ms_double = (t2 - t1);
             ms = ms_double.count();
             id = getId(message);
-
-            //---- parse message -------------------------------------------
-            parsedId = parseId(message);
-            parsedPayload = parsePayload(message);
-            delete parsedPayload;
-            //---------------------------------------------------------
 
             //----- update map values ----------------------------------------------
             auto iterator = messages.find(id);
