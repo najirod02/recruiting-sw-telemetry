@@ -27,7 +27,8 @@ const int MAX_SIZE_ID = 3;
 const int MAX_SIZE_PAYLOAD = 16;
 
 //const for buffers size
-const int MAX_PATH_SIZE= 500;
+const int MAX_PATH_SIZE = 500;
+const int MAX_NAME_FILE = 100;
 
 //counter of number of file
 static int counter_files = 0;
@@ -63,14 +64,14 @@ bool check_start_message(const char * line);
 bool check_stop_message(const char * line);
 
 /**
- * parse the id message from exa base to deca base
+ * parse the id from exa base to deca base
  * @param line the message read
  * @return the deca value of the message, -1 if some errors occur
  */
 int16_t parseId(const char * line);
 
 /**
- * parse the payload message from exa base to deca base
+ * parse the payload from exa base to deca base
  * @param line the message read
  * @return the deca values of the message of characters pairs, null if there's some errors
  */
@@ -106,19 +107,14 @@ int hexadecimalToDecimal(const char * hexVal);
 int createCSV(auto &messages, const string& file_name);
 
 /**
- * file run.txt saves every data that are in a run state, located in
- * \bin\
+ * file run.txt saves every data that are in a run state
  *
- * file csv which saves the data from the run sessions doing some stats, located in
- * \bin\
+ * file csv which saves the data from the run sessions doing some stats
  *
- * the file used for starting the start interface is candump.log
+ * the file used for starting the CAN interface is candump.log
  */
 
 int main() {
-
-    string file_name = createNameFile();//name to give to the files
-
     //------------------ opening CAN interface --------------------------------------
     char * path = getAbsolutePath("candump.log");
 
@@ -137,7 +133,7 @@ int main() {
     //struct to contain values about a message
     typedef struct{
         int nMsg;//number of times of the msg
-        double total_time;
+        double total_time;//total millis of each message
     } Values;
 
     //map containing stats about the id message
@@ -147,6 +143,7 @@ int main() {
     STATUS state = IDLE;
 
     //variables to get data from CAN interface
+    string file_name = createNameFile();//name to give to the files
     char message[MAX_CAN_MESSAGE_SIZE];//the message read
     double ms;
     char *id;
@@ -177,7 +174,9 @@ int main() {
                     close_can();
                     return 1;
                 }
+                //end if state == IDLE
             }
+            //end check_start_message()
         }
 
         if (check_stop_message(message)) {//stop message
@@ -186,6 +185,7 @@ int main() {
             //create statistics file for the ended run state
             createCSV(messages, file_name + "-" + to_string(counter_files) + ".csv");
         }
+
         //------------------------------------------------------------------------------------
 
 
@@ -193,12 +193,12 @@ int main() {
         //writing on run file if in run state
         if(state == RUN) {
             //get data to write
-            auto t2 = high_resolution_clock::now();//elapsed time from the start of reading
+            auto t2 = high_resolution_clock::now();//elapsed time from the start of run state
             duration<double, std::milli> ms_double = (t2 - t1);
             ms = ms_double.count();
             id = getId(message);
 
-            //parse message -------------------------------------------
+            //---- parse message -------------------------------------------
             parsedId = parseId(message);
             parsedPayload = parsePayload(message);
             delete parsedPayload;
@@ -225,17 +225,17 @@ int main() {
 
             delete id;
         }
-
         //end while
     }
-    //-------- stop reading CAN interface -----------------------------------------
 
-    //closing CAN interface and txt file
+
+    //-------- stop reading CAN interface -----------------------------------------
+    //closing CAN interface and file
     close_can();
     runFile.close();
 
     //if there are some values in the map, write them
-    //it means that no stop message was read but the data must be wrote
+    //it means that no stop message was read but the data must be saved
     if(!messages.empty())
         createCSV(messages, file_name + " " + to_string(counter_files) + ".csv");
 
@@ -245,11 +245,11 @@ int main() {
 char * createNameFile(){
     time_t rawtime;
     struct tm * timeinfo;
-    char *buffer = new char[80];
+    char *buffer = new char[MAX_NAME_FILE];
     time (&rawtime);
     timeinfo = localtime(&rawtime);
 
-    strftime(buffer,80,"%d-%m-%Y %H-%M-%S",timeinfo);
+    strftime(buffer,MAX_NAME_FILE,"%d-%m-%Y %H-%M-%S",timeinfo);
     return buffer;
 }
 
@@ -312,7 +312,7 @@ int hexadecimalToDecimal(const char * hexVal){
             dec_val += (int(hexVal[i]) - 55) * base;
             base = base * 16;
         } else{
-            //error, the string has some non hexa values
+            //error, the string has some non hex values
             return -1;
         }
     }
