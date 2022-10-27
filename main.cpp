@@ -238,7 +238,7 @@ int main() {
     //if there are some values in the map, write them
     //it means that no stop message was read but the data must be saved
     if(!messages.empty())
-        createCSV(messages, file_name + " " + to_string(counter_files) + ".csv");
+        createCSV(messages, file_name + "-" + to_string(counter_files) + ".csv");
 
     return 0;
 }
